@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import Brand from '../components/Brand'
-import { DEMO_ALL_MEMBERSHIPS } from '../utils/demoMode'
 
 const Arrow = () => <span aria-hidden="true">→</span>
 
@@ -13,7 +12,7 @@ export default function LandingPage({ onNavigate }) {
       return
     }
     if (role === 'Bowling alley owner') {
-      onNavigate(DEMO_ALL_MEMBERSHIPS ? 'alley-setup' : 'owner-auth')
+      onNavigate('owner-auth')
       return
     }
     setNotice(`${role} sign-up is the next page we’ll build. Your choice has been noted.`)
