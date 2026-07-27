@@ -13,7 +13,7 @@ export default function OwnerAuthPage({ onBack, onContinue }) {
       <div className="owner-form-wrap">
         <div className="owner-tabs"><button className={mode === 'signup' ? 'active' : ''} onClick={() => { setMode('signup'); setSubmitted(false) }}>Create owner account</button><button className={mode === 'login' ? 'active' : ''} onClick={() => { setMode('login'); setSubmitted(false) }}>Log in</button></div>
         <div className="owner-heading"><p className="owner-eyebrow">FOR BOWLING ALLEY OWNERS</p><h1>{mode === 'signup' ? 'Bring your lanes to life.' : 'Welcome back.'}</h1><p>{mode === 'signup' ? 'Set up your alley, welcome members, and turn spare lane time into reliable monthly revenue.' : 'Log in to manage your alley, members, and reservations.'}</p></div>
-        <form className="owner-form" onSubmit={submit}>
+        <form className="owner-form" onSubmit={submit} noValidate>
           {mode === 'signup' && <><label>Your name<input type="text" placeholder="Full name" autoComplete="name" required /></label><label>Bowling alley name<input type="text" placeholder="e.g. Sunset Lanes" required /></label></>}
           <label>Business email<input type="email" placeholder="you@youralley.com" autoComplete="email" required /></label>
           <label>Password<input type="password" placeholder="At least 8 characters" minLength="8" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} required /></label>
