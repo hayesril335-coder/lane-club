@@ -12,7 +12,7 @@ export default function OwnerCheckoutPage({ onBack, onContinue }) {
         <button className="checkout-back" onClick={onBack}>← Back to account setup</button>
         <p className="checkout-eyebrow">OWNER SUBSCRIPTION</p><h1>Activate your <em>alley.</em></h1><p className="checkout-lead">Start offering flexible lane memberships to your regulars. You can finish setting up your lanes and pricing after checkout.</p>
         <div className="checkout-stepper"><span className="done">✓</span><i /><span className="current">2</span><i /><span>3</span><small>Account</small><small>Billing</small><small>Set up alley</small></div>
-        <form className="billing-form" onSubmit={submit}>
+        <form className="billing-form" onSubmit={submit} noValidate>
           <h2>Payment details</h2><p className="billing-subtitle">Your subscription starts after your alley setup is complete.</p>
           <label>Cardholder name<input required placeholder="Name on card" autoComplete="cc-name" /></label>
           <label>Card number<div className="card-input"><input required inputMode="numeric" placeholder="1234 1234 1234 1234" autoComplete="cc-number" /><span>VISA</span></div></label>
