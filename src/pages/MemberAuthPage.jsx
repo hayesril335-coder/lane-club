@@ -10,19 +10,19 @@ export default function MemberAuthPage({ onBack, onOwner, onContinue }) {
   const switchMode = (nextMode) => { setMode(nextMode); setMessage('') }
   const submit = async (event) => {
     event.preventDefault(); setMessage('')
-    if (!isBackendConfigured) { onContinue(); return }
     const form = new FormData(event.currentTarget)
+    if (!isBackendConfigured) { onContinue({ fullName: form.get('fullName') || 'Test Member' }); return }
     setIsSubmitting(true)
     const payload = { email: form.get('email'), password: form.get('password') }
     const result = mode === 'signup' ? await signUp({ ...payload, fullName: form.get('fullName'), role: 'member' }) : await signIn(payload)
     setIsSubmitting(false)
     if (result.error) { setMessage(result.error.message); return }
     if (mode === 'signup' && !result.data.session) { setMessage('Check your email to confirm your account, then log in.'); return }
-    onContinue()
+    onContinue({ fullName: form.get('fullName') || 'Member' })
   }
   const google = async () => {
     setMessage('')
-    if (!isBackendConfigured) { onContinue(); return }
+    if (!isBackendConfigured) { onContinue({ fullName: 'Google Test Member' }); return }
     setIsSubmitting(true)
     const result = await signInWithGoogle()
     setIsSubmitting(false)
