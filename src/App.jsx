@@ -26,6 +26,7 @@ export default function App() {
   const [ownerReservations, setOwnerReservations] = useState([])
   const [selectedAlley, setSelectedAlley] = useState({ id: 1, name: 'Sunset Lanes', area: 'Downtown Los Angeles', distance: 1.2, price: 20, lanes: 16, rating: 4.8, reviews: 124, tags: ['Late night', 'Food & drinks'], color: 'sunset' })
   useEffect(() => { if (member.email) localStorage.setItem('lane-club-member', JSON.stringify(member)) }, [member])
+  useEffect(() => { if (member.email && page === 'home') setPage('member-dashboard') }, [member.email, page, setPage])
   const continueAsMember = ({ fullName, email } = {}) => {
     setMember(current => ({ ...current, name: fullName || current.name, email: email || current.email }))
     setPage('find-alley')
