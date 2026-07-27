@@ -50,10 +50,10 @@ export default function App() {
   if (page === 'reservation-management') return <ReservationManagementPage onBack={() => setPage('owner-dashboard')} onNewReservation={() => setPage('make-reservation')} />
   if (page === 'find-alley') return <FindAlleyPage onBack={() => setPage('member-dashboard')} onSelect={selectAlley} member={member} onAccount={() => setPage('member-settings')} onLogout={logout} />
   if (page === 'alley-details') return <AlleyDetailsPage alley={selectedAlley} onBack={() => setPage('member-dashboard')} onJoin={() => hasActiveMembership() ? activateMembership() : setPage('member-checkout')} />
-  if (page === 'member-checkout') return <MemberCheckoutPage onBack={() => setPage('alley-details')} onComplete={activateMembership} />
-  if (page === 'member-dashboard') return <MemberDashboardPage onBack={() => setPage('find-alley')} onReserve={() => setPage('make-reservation')} onAccount={() => setPage('member-settings')} onLogout={logout} member={member} />
-  if (page === 'make-reservation') return <MakeReservationPage onBack={() => setPage('member-dashboard')} onConfirm={addReservation} member={member} />
-  if (page === 'reservation-confirmation') return <ReservationConfirmationPage onDashboard={() => setPage('member-dashboard')} onReserve={() => setPage('make-reservation')} member={member} />
-  if (page === 'member-settings') return <MemberSettingsPage onBack={() => setPage('member-dashboard')} onLogout={logout} member={member} onUpdate={updates => setMember(current => ({ ...current, ...updates }))} />
+  if (page === 'member-checkout') return <MemberCheckoutPage alley={selectedAlley} onBack={() => setPage('alley-details')} onComplete={activateMembership} />
+  if (page === 'member-dashboard') return <MemberDashboardPage alley={selectedAlley} onBack={() => setPage('find-alley')} onReserve={() => setPage('make-reservation')} onAccount={() => setPage('member-settings')} onLogout={logout} member={member} />
+  if (page === 'make-reservation') return <MakeReservationPage alley={selectedAlley} onBack={() => setPage('member-dashboard')} onConfirm={addReservation} member={member} />
+  if (page === 'reservation-confirmation') return <ReservationConfirmationPage alley={selectedAlley} onDashboard={() => setPage('member-dashboard')} onReserve={() => setPage('make-reservation')} member={member} />
+  if (page === 'member-settings') return <MemberSettingsPage alley={selectedAlley} onBack={() => setPage('member-dashboard')} onLogout={logout} member={member} onUpdate={updates => setMember(current => ({ ...current, ...updates }))} />
   return <LandingPage onNavigate={setPage} />
 }
