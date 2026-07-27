@@ -22,3 +22,17 @@ export async function getWeeklyHours(membershipId, weekStart) {
     .eq('week_start', weekStart)
     .maybeSingle()
 }
+
+// Cash is marked paid by the database. Card payments remain pending until a
+// connected Stripe Terminal reader confirms the payment intent.
+export async function createWalkInReservation({ laneId, startsAt, durationHours, guestName, guestPhone, paymentMethod, amountCents }) {
+  return requireSupabase().rpc('create_walk_in_reservation', {
+    p_lane_id: laneId,
+    p_starts_at: startsAt,
+    p_duration_hours: durationHours,
+    p_guest_name: guestName,
+    p_guest_phone: guestPhone,
+    p_payment_method: paymentMethod,
+    p_amount_cents: amountCents,
+  })
+}
