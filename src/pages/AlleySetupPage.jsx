@@ -1,11 +1,16 @@
 import { useState } from 'react'
 import './AlleySetupPage.css'
 
-export default function AlleySetupPage({ onBack, onComplete }) {
+export default function AlleySetupPage({ onBack, onComplete, initialAlley }) {
   const [saved, setSaved] = useState(false)
   const [lanes, setLanes] = useState(16)
   const [price, setPrice] = useState(20)
-  const submit = (event) => { event.preventDefault(); setSaved(true); onComplete() }
+  const submit = (event) => {
+    event.preventDefault()
+    const fields = [...event.currentTarget.querySelectorAll('input, select')].map(field => field.value)
+    setSaved(true)
+    onComplete({ name: fields[0], phone: fields[1], website: fields[2], street: fields[3], city: fields[4], state: fields[5], lanes: Number(fields[6]), openingTime: fields[7], closingTime: fields[8], price: Number(fields[9]) })
+  }
 
   return <main className="setup-page">
     <header className="setup-header"><a className="brand setup-brand" href="#home" onClick={(e) => { e.preventDefault(); onBack() }}><span className="brand-mark"><i /><i /><i /></span>LANE CLUB</a><button onClick={onBack}>← Back to billing</button></header>

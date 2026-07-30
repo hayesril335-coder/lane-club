@@ -42,12 +42,9 @@ export default function LandingPage({ onNavigate }) {
           <div className="member-note"><span>4</span><p><strong>Hours per week</strong><br />Use them any way you want.</p></div>
         </div>
 
-        <div className="lane-visual" aria-label="Colorful bowling lane illustration">
-          <div className="glow glow-one" /><div className="glow glow-two" />
+        <div className="lane-visual" aria-label="A bowling ball rolling toward ten pins">
+          <img className="lane-photo" src="/images/lane-club-bowling-hero.png" alt="A realistic bowling ball rolling toward ten bowling pins" />
           <div className="score-card"><small>LANE 12</small><strong>YOUR TIME</strong><span>FRI · 7:00 PM</span></div>
-          <div className="pins"><b /><b /><b /><b /><b /><b /><b /><b /><b /><b /></div>
-          <div className="ball">8</div>
-          <div className="lane-lines"><i /><i /><i /><i /><i /></div>
         </div>
       </section>
 

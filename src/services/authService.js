@@ -1,30 +1,29 @@
-import { supabase } from '../lib/supabaseClient'
-
-function requireSupabase() {
-  if (!supabase) throw new Error('Backend is not configured. Add Supabase values to .env.local.')
-  return supabase
-}
+import { browserLocalPersistence, createUserWithEmailAndPassword, GoogleAuthProvider, onAuthStateChanged, setPersistence, signInWithEmailAndPassword, signInWithPopup, signOut as firebaseSignOut, updateProfile } from 'firebase/auth'
+import { firebaseAuth } from '../lib/firebaseClient'
 
 export async function signUp({ email, password, fullName, role = 'member' }) {
-  const client = requireSupabase()
-  return client.auth.signUp({
-    email,
-    password,
-    options: { data: { full_name: fullName, role } },
-  })
+  await setPersistence(firebaseAuth, browserLocalPersistence)
+  const credential = await createUserWithEmailAndPassword(firebaseAuth, email, password)
+  await updateProfile(credential.user, { displayName: fullName })
+  return { user: credential.user, role }
 }
 
 export async function signIn({ email, password }) {
-  return requireSupabase().auth.signInWithPassword({ email, password })
+  await setPersistence(firebaseAuth, browserLocalPersistence)
+  const credential = await signInWithEmailAndPassword(firebaseAuth, email, password)
+  return { user: credential.user }
 }
 
 export async function signOut() {
-  return requireSupabase().auth.signOut()
+  return firebaseSignOut(firebaseAuth)
 }
 
 export async function signInWithGoogle() {
-  return requireSupabase().auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: window.location.origin },
-  })
+  await setPersistence(firebaseAuth, browserLocalPersistence)
+  const credential = await signInWithPopup(firebaseAuth, new GoogleAuthProvider())
+  return { user: credential.user }
+}
+
+export function observeAuthState(callback) {
+  return onAuthStateChanged(firebaseAuth, callback)
 }
