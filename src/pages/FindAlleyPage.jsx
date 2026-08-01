@@ -2,14 +2,14 @@ import { useMemo, useState } from 'react'
 import AccountMenu from '../components/AccountMenu'
 import './FindAlleyPage.css'
 
-const alleys = [
+export const defaultAlleys = [
   { id: 1, name: 'Sunset Lanes', area: 'Downtown Los Angeles', distance: 1.2, price: 20, lanes: 16, rating: 4.8, reviews: 124, tags: ['Late night', 'Food & drinks'], color: 'sunset' },
   { id: 2, name: 'Highland Bowl', area: 'Highland Park', distance: 3.6, price: 25, lanes: 24, rating: 4.7, reviews: 98, tags: ['Classic lanes', 'Family friendly'], color: 'highland' },
   { id: 3, name: 'The Spare Room', area: 'Hollywood', distance: 4.1, price: 30, lanes: 12, rating: 4.9, reviews: 203, tags: ['Premium', 'Cocktails'], color: 'spare' },
   { id: 4, name: 'Pin Point Social', area: 'Koreatown', distance: 5, price: 18, lanes: 10, rating: 4.6, reviews: 76, tags: ['Best value', 'Open late'], color: 'pinpoint' },
 ]
 
-export default function FindAlleyPage({ onBack, onSelect, member, onAccount, onLogout }) {
+export default function FindAlleyPage({ onBack, onSelect, member, onAccount, onLogout, alleys = defaultAlleys }) {
   const [query, setQuery] = useState('')
   const [price, setPrice] = useState('Any price')
   const [sort, setSort] = useState('Recommended')

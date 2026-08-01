@@ -1,4 +1,4 @@
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore'
 import { firestore } from '../lib/firebaseClient'
 
 export async function loadAccount(uid) {
@@ -17,4 +17,9 @@ export async function loadAlley(uid) {
 
 export async function saveAlley(uid, data) {
   await setDoc(doc(firestore, 'alleys', uid), { ...data, ownerId: uid, updatedAt: serverTimestamp() }, { merge: true })
+}
+
+export async function loadAlleys() {
+  const snapshot = await getDocs(collection(firestore, 'alleys'))
+  return snapshot.docs.map(item => ({ id: item.id, ...item.data() }))
 }
