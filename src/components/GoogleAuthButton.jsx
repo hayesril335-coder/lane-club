@@ -32,8 +32,6 @@ export default function GoogleAuthButton({ disabled = false, onCredential, onErr
       window.google.accounts.id.initialize({
         client_id: clientId,
         callback: response => onCredential(response.credential),
-        ux_mode: 'redirect',
-        login_uri: 'https://lane-club.vercel.app/api/google-login',
         auto_select: false,
         cancel_on_tap_outside: true,
         use_fedcm_for_prompt: true,
