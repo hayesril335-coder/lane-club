@@ -29,12 +29,14 @@ export async function signInWithGoogle(role = 'member') {
   }
   try {
     const credential = await signInWithPopup(firebaseAuth, provider)
+    sessionStorage.removeItem('lane-club-google-role')
     return { user: credential.user }
   } catch (error) {
     if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
       await signInWithRedirect(firebaseAuth, provider)
       return { redirecting: true }
     }
+    sessionStorage.removeItem('lane-club-google-role')
     throw error
   }
 }

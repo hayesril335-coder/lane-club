@@ -34,11 +34,21 @@ export default function App() {
   useEffect(() => observeAuthState(async authUser => {
     setUser(authUser)
     if (authUser) {
-      const account = await loadAccount(authUser.uid)
+      let account = await loadAccount(authUser.uid)
       const alley = await loadAlley(authUser.uid)
+      const pendingGoogleRole = sessionStorage.getItem('lane-club-google-role')
+      if (!account && pendingGoogleRole) {
+        account = { name: authUser.displayName || 'Lane Club Member', email: authUser.email, role: pendingGoogleRole, phone: '', hasMembership: false, usedHours: 0, reservations: [] }
+        await saveAccount(authUser.uid, account)
+      }
       setMember(current => ({ ...current, ...account, name: account?.name || authUser.displayName || 'Lane Club Member', email: authUser.email }))
       setOwnerAlley(alley)
-      if (page === 'home') setPage(account?.role === 'owner' ? (alley ? 'owner-dashboard' : 'alley-setup') : 'member-dashboard')
+      if (pendingGoogleRole) {
+        sessionStorage.removeItem('lane-club-google-role')
+        setPage((account?.role || pendingGoogleRole) === 'owner' ? (alley ? 'owner-dashboard' : 'owner-checkout') : 'member-dashboard')
+      } else if (page === 'home' || page === 'member-auth' || page === 'owner-auth') {
+        setPage(account?.role === 'owner' ? (alley ? 'owner-dashboard' : 'owner-checkout') : 'member-dashboard')
+      }
     }
     setAuthReady(true)
   }), [])
