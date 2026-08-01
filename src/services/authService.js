@@ -1,4 +1,4 @@
-import { browserLocalPersistence, createUserWithEmailAndPassword, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, setPersistence, signInWithEmailAndPassword, signInWithRedirect, signOut as firebaseSignOut, updateProfile } from 'firebase/auth'
+import { browserLocalPersistence, createUserWithEmailAndPassword, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, setPersistence, signInWithCredential, signInWithEmailAndPassword, signOut as firebaseSignOut, updateProfile } from 'firebase/auth'
 import { firebaseAuth } from '../lib/firebaseClient'
 
 export async function signUp({ email, password, fullName, role = 'member' }) {
@@ -18,13 +18,11 @@ export async function signOut() {
   return firebaseSignOut(firebaseAuth)
 }
 
-export async function signInWithGoogle(role = 'member') {
+export async function signInWithGoogleCredential(idToken, role = 'member') {
   await setPersistence(firebaseAuth, browserLocalPersistence)
-  const provider = new GoogleAuthProvider()
-  provider.setCustomParameters({ prompt: 'select_account' })
-  localStorage.setItem('lane-club-google-role', role)
-  await signInWithRedirect(firebaseAuth, provider)
-  return { redirecting: true }
+  const credential = GoogleAuthProvider.credential(idToken)
+  const result = await signInWithCredential(firebaseAuth, credential)
+  return { user: result.user, role }
 }
 
 export async function completeGoogleRedirect() {
