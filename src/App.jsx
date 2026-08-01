@@ -84,7 +84,7 @@ export default function App() {
           if (publicAlleys.length) setAvailableAlleys(mergePublicAlleys(publicAlleys))
           if (pendingGoogleRole) {
             localStorage.removeItem('lane-club-google-role')
-            setPage((account?.role || pendingGoogleRole) === 'owner' ? (alley ? 'owner-dashboard' : 'owner-checkout') : 'member-dashboard')
+            setPage(pendingGoogleRole === 'owner' ? (alley ? 'owner-dashboard' : 'owner-checkout') : 'member-dashboard')
           } else if (page === 'home' || page === 'member-auth' || page === 'owner-auth') {
             setPage(account?.role === 'owner' ? (alley ? 'owner-dashboard' : 'owner-checkout') : 'member-dashboard')
           }
