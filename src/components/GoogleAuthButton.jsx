@@ -34,12 +34,17 @@ export default function GoogleAuthButton({ disabled = false, onCredential, onErr
         callback: response => onCredential(response.credential),
         auto_select: false,
         cancel_on_tap_outside: true,
+        use_fedcm_for_prompt: true,
+        itp_support: true,
       })
       container.current.replaceChildren()
       window.google.accounts.id.renderButton(container.current, {
         type: 'standard', theme: 'outline', size: 'large', text: 'continue_with',
         shape: 'rectangular', width: Math.min(400, Math.max(240, window.innerWidth - 72)),
       })
+      // The account prompt works without opening a separate window, which is
+      // important on iPhone browsers and other clients that block popups.
+      window.google.accounts.id.prompt()
     }).catch(onError)
     return () => { active = false }
   }, [onCredential, onError])
