@@ -8,7 +8,7 @@ export default function OwnerAuthPage({ onBack, onContinue }) {
   const [busy, setBusy] = useState(false)
   const finish = async (action, alleyName = '') => {
     setBusy(true); setMessage('')
-    try { const result = await action(); await onContinue({ user: result.user, alleyName }) }
+    try { const result = await action(); if (result?.redirecting) return; await onContinue({ user: result.user, alleyName }) }
     catch (error) { setMessage(error.message.replace('Firebase: ', '')) }
     finally { setBusy(false) }
   }

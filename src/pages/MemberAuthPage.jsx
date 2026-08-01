@@ -8,7 +8,7 @@ export default function MemberAuthPage({ onBack, onOwner, onContinue }) {
   const [busy, setBusy] = useState(false)
   const finish = async action => {
     setBusy(true); setMessage('')
-    try { const result = await action(); await onContinue({ user: result.user, fullName: result.user.displayName, email: result.user.email }) }
+    try { const result = await action(); if (result?.redirecting) return; await onContinue({ user: result.user, fullName: result.user.displayName, email: result.user.email }) }
     catch (error) { setMessage(error.code === 'auth/email-already-in-use' ? 'This account already exists. Please log in.' : error.message.replace('Firebase: ', '')) }
     finally { setBusy(false) }
   }
