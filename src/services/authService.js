@@ -1,4 +1,4 @@
-import { browserLocalPersistence, createUserWithEmailAndPassword, GoogleAuthProvider, onAuthStateChanged, setPersistence, signInWithEmailAndPassword, signInWithPopup, signOut as firebaseSignOut, updateProfile } from 'firebase/auth'
+import { browserLocalPersistence, createUserWithEmailAndPassword, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, setPersistence, signInWithEmailAndPassword, signInWithRedirect, signOut as firebaseSignOut, updateProfile } from 'firebase/auth'
 import { firebaseAuth } from '../lib/firebaseClient'
 
 export async function signUp({ email, password, fullName, role = 'member' }) {
@@ -19,11 +19,16 @@ export async function signOut() {
 }
 
 export async function signInWithGoogle(role = 'member') {
+  await setPersistence(firebaseAuth, browserLocalPersistence)
   const provider = new GoogleAuthProvider()
   provider.setCustomParameters({ prompt: 'select_account' })
-  // Start the popup before any awaited work so Safari keeps the original tap gesture.
-  const credential = await signInWithPopup(firebaseAuth, provider)
-  return { user: credential.user, role }
+  localStorage.setItem('lane-club-google-role', role)
+  await signInWithRedirect(firebaseAuth, provider)
+  return { redirecting: true }
+}
+
+export async function completeGoogleRedirect() {
+  return getRedirectResult(firebaseAuth)
 }
 
 export function observeAuthState(callback) {
