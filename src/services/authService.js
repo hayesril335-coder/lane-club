@@ -1,4 +1,4 @@
-import { browserLocalPersistence, createUserWithEmailAndPassword, GoogleAuthProvider, onAuthStateChanged, setPersistence, signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, signOut as firebaseSignOut, updateProfile } from 'firebase/auth'
+import { browserLocalPersistence, createUserWithEmailAndPassword, GoogleAuthProvider, onAuthStateChanged, setPersistence, signInWithEmailAndPassword, signInWithPopup, signOut as firebaseSignOut, updateProfile } from 'firebase/auth'
 import { firebaseAuth } from '../lib/firebaseClient'
 
 export async function signUp({ email, password, fullName, role = 'member' }) {
@@ -19,26 +19,11 @@ export async function signOut() {
 }
 
 export async function signInWithGoogle(role = 'member') {
-  await setPersistence(firebaseAuth, browserLocalPersistence)
-  sessionStorage.setItem('lane-club-google-role', role)
   const provider = new GoogleAuthProvider()
-  const mobileBrowser = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768
-  if (mobileBrowser) {
-    await signInWithRedirect(firebaseAuth, provider)
-    return { redirecting: true }
-  }
-  try {
-    const credential = await signInWithPopup(firebaseAuth, provider)
-    sessionStorage.removeItem('lane-club-google-role')
-    return { user: credential.user }
-  } catch (error) {
-    if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
-      await signInWithRedirect(firebaseAuth, provider)
-      return { redirecting: true }
-    }
-    sessionStorage.removeItem('lane-club-google-role')
-    throw error
-  }
+  provider.setCustomParameters({ prompt: 'select_account' })
+  // Start the popup before any awaited work so Safari keeps the original tap gesture.
+  const credential = await signInWithPopup(firebaseAuth, provider)
+  return { user: credential.user, role }
 }
 
 export function observeAuthState(callback) {
