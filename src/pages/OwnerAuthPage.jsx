@@ -38,7 +38,7 @@ export default function OwnerAuthPage({ onBack, onContinue }) {
       <div className="owner-form-wrap">
         <div className="owner-tabs"><button className={mode === 'signup' ? 'active' : ''} onClick={() => setMode('signup')}>Create owner account</button><button className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')}>Log in</button></div>
         <div className="owner-heading"><p className="owner-eyebrow">FOR BOWLING ALLEY OWNERS</p><h1>{mode === 'signup' ? 'Bring your lanes to life.' : 'Welcome back.'}</h1><p>Log in to securely save your alley, members, and reservations.</p></div>
-        <GoogleAuthButton disabled={busy} onCredential={googleCredential} onError={googleError} />
+        <GoogleAuthButton disabled={busy} onCredential={googleCredential} onError={googleError} role="owner" />
         <div className="auth-divider">or use email</div>
         <form className="owner-form" onSubmit={submit}>
           {mode === 'signup' && <><label>Your name<input name="fullName" required /></label><label>Bowling alley name<input name="alleyName" required /></label></>}

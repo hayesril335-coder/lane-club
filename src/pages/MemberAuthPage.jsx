@@ -40,7 +40,7 @@ export default function MemberAuthPage({ onBack, onOwner, onContinue }) {
     <section className="auth-panel"><div className="auth-form-wrap">
       <div className="auth-tabs"><button className={mode === 'signup' ? 'active' : ''} onClick={() => setMode('signup')}>Create account</button><button className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')}>Log in</button></div>
       <div className="form-heading"><p className="eyebrow">{mode === 'signup' ? 'START BOWLING' : 'WELCOME BACK'}</p><h2>{mode === 'signup' ? 'Create your account.' : 'Log in to Lane Club.'}</h2></div>
-      <GoogleAuthButton disabled={busy} onCredential={googleCredential} onError={googleError} />
+      <GoogleAuthButton disabled={busy} onCredential={googleCredential} onError={googleError} role="member" />
       <div className="auth-divider">or use email</div>
       <form onSubmit={submit} className="auth-form">
         {mode === 'signup' && <label>Full name<input name="fullName" required /></label>}

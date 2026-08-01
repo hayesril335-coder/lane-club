@@ -19,7 +19,7 @@ import MakeReservationPage from './pages/MakeReservationPage'
 import ReservationConfirmationPage from './pages/ReservationConfirmationPage'
 import MemberSettingsPage from './pages/MemberSettingsPage'
 import { hasActiveMembership } from './utils/demoMode'
-import { completeGoogleRedirect, observeAuthState, signOut } from './services/authService'
+import { completeGoogleRedirect, observeAuthState, signInWithGoogleCredential, signOut } from './services/authService'
 import { loadAccount, loadAlley, saveAccount, saveAlley } from './services/accountService'
 
 export default function App() {
@@ -34,6 +34,11 @@ export default function App() {
   useEffect(() => {
     let unsubscribe = () => {}
     const initializeAuth = async () => {
+      const postedGoogleToken = sessionStorage.getItem('lane-club-google-id-token')
+      if (postedGoogleToken) {
+        sessionStorage.removeItem('lane-club-google-id-token')
+        try { await signInWithGoogleCredential(postedGoogleToken, localStorage.getItem('lane-club-google-role') || 'member') } catch (error) { console.error(error) }
+      }
       try { await completeGoogleRedirect() } catch (error) { console.error(error) }
       unsubscribe = observeAuthState(async authUser => {
         setUser(authUser)

@@ -22,7 +22,7 @@ function loadGoogleIdentity() {
   })
 }
 
-export default function GoogleAuthButton({ disabled = false, onCredential, onError }) {
+export default function GoogleAuthButton({ disabled = false, onCredential, onError, role = 'member' }) {
   const container = useRef(null)
 
   useEffect(() => {
@@ -32,12 +32,15 @@ export default function GoogleAuthButton({ disabled = false, onCredential, onErr
       window.google.accounts.id.initialize({
         client_id: clientId,
         callback: response => onCredential(response.credential),
+        ux_mode: 'redirect',
+        login_uri: 'https://lane-club.vercel.app/api/google-login',
         auto_select: false,
         cancel_on_tap_outside: true,
         use_fedcm_for_prompt: true,
         itp_support: true,
       })
       container.current.replaceChildren()
+      localStorage.setItem('lane-club-google-role', role)
       window.google.accounts.id.renderButton(container.current, {
         type: 'standard', theme: 'outline', size: 'large', text: 'continue_with',
         shape: 'rectangular', width: Math.min(400, Math.max(240, window.innerWidth - 72)),
@@ -47,7 +50,7 @@ export default function GoogleAuthButton({ disabled = false, onCredential, onErr
       window.google.accounts.id.prompt()
     }).catch(onError)
     return () => { active = false }
-  }, [onCredential, onError])
+  }, [onCredential, onError, role])
 
   return <div className={`google-identity-button${disabled ? ' disabled' : ''}`} ref={container} aria-disabled={disabled} />
 }
