@@ -5,7 +5,7 @@ import './OwnerSettingsActions.css'
 
 const lastFour = value => String(value || '').replace(/\D/g, '').slice(-4)
 
-export default function OwnerSettingsPage({ alley, email, onLanes, onLeagueSetup, onSave, onUpdateCredentials, onCancelService, onLogout }) {
+export default function OwnerSettingsPage({ alley, email, onEditStore, onLanes, onLeagueSetup, onSave, onUpdateCredentials, onCancelService, onLogout }) {
   const [name, setName] = useState(alley?.name || '')
   const [message, setMessage] = useState('')
   const [confirmCancel, setConfirmCancel] = useState(false)
@@ -26,6 +26,7 @@ export default function OwnerSettingsPage({ alley, email, onLanes, onLeagueSetup
       <button disabled={busy}>Save alley name</button>
     </form>
 
+    <article><h2>Store</h2><p>Edit product categories, pictures, prices, titles, and descriptions.</p><button onClick={onEditStore}>Edit store →</button></article>
     <article><h2>Lane names</h2><p>Rename lanes and manage their availability in lane management.</p><button onClick={onLanes}>Manage lane names →</button></article>
     <article><h2>Leagues</h2><p>Create leagues, set pricing, and choose league lanes and dates.</p><button className="league-setup-link" onClick={onLeagueSetup}>Setup a league →</button></article>
 

@@ -1,10 +1,17 @@
 import { useState } from 'react'
+import StoreOrderDialog from '../components/StoreOrderDialog'
 import { productsForAlley } from '../utils/products'
 import './StorePage.css'
 
-export default function MemberStorePage({ alley, onDashboard, onEditStore, hideHeader = false }) {
+export default function MemberStorePage({ alley, onDashboard, onEditStore, hideHeader = false, onPlaceOrder, staffRole }) {
   const [notice, setNotice] = useState('')
+  const [selectedProduct, setSelectedProduct] = useState(null)
   const products = productsForAlley(alley)
+  const purchase = product => {
+    if (onPlaceOrder) setSelectedProduct(product)
+    else setNotice(`${product.title} is ready to purchase at ${alley.name}. Online checkout will be added when payments are enabled.`)
+  }
+
   return <main className="store-page member-store-page">
     {!hideHeader && <header>
       <button onClick={onDashboard}>← Dashboard</button>
@@ -17,8 +24,9 @@ export default function MemberStorePage({ alley, onDashboard, onEditStore, hideH
       {notice && <p className="store-notice">{notice}</p>}
       <div className="product-grid">{products.map(product => <article className="product-card" key={product.id}>
         <div className="product-image">{product.image ? <img src={product.image} alt={product.title} /> : <span>●</span>}</div>
-        <div><p>{alley.name.toUpperCase()}</p><h3>{product.title}</h3><span>{product.description}</span><footer><strong>${Number(product.price).toFixed(2)}</strong><button onClick={() => setNotice(`${product.title} is ready to purchase at ${alley.name}. Online checkout will be added when payments are enabled.`)}>Purchase</button></footer></div>
+        <div><p>{alley.name.toUpperCase()}</p><h3>{product.title}</h3><span>{product.description}</span><footer><strong>${Number(product.price).toFixed(2)}</strong><button onClick={() => purchase(product)}>{onPlaceOrder ? 'Place order' : 'Purchase'}</button></footer></div>
       </article>)}</div>
     </section>
+    {selectedProduct && <StoreOrderDialog product={selectedProduct} staffRole={staffRole} onSubmit={onPlaceOrder} onClose={success => { setSelectedProduct(null); if (success) setNotice(success) }} />}
   </main>
 }
