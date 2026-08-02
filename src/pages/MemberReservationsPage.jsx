@@ -1,3 +1,4 @@
+import MembershipAlleyMenu from '../components/MembershipAlleyMenu'
 import './MemberReservationsPage.css'
 
 const reservationParts = reservation => {
@@ -6,11 +7,11 @@ const reservationParts = reservation => {
   return [reservation.date?.split(' ')[0] || 'DATE', reservation.date?.split(' ')[1] || '—']
 }
 
-export default function MemberReservationsPage({ alley, member, onDashboard, onReserve, onChangeAlley }) {
+export default function MemberReservationsPage({ alley, membershipAlleys, member, onDashboard, onReserve, onSelectAlley }) {
   const reservations = member.reservations || []
   const remaining = Math.max(0, 4 - member.usedHours)
   return <main className="member-reservations-page">
-    <header><button onClick={onDashboard}>← Dashboard</button><span>LANE CLUB</span><button onClick={onChangeAlley}>Change Alley</button></header>
+    <header><button onClick={onDashboard}>← Dashboard</button><span>LANE CLUB</span><MembershipAlleyMenu alleys={membershipAlleys} currentAlley={alley} onSelect={onSelectAlley} /></header>
     <section className="member-reservations-shell"><p>MY RESERVATIONS</p><h1>Your lane <em>schedule.</em></h1><span className="reservations-intro">You have {remaining} of four hours available this week.</span>
       {reservations.length ? <div className="member-booking-list">{reservations.map((reservation, index) => <article key={reservation.id || index}><div className="member-booking-date"><small>{reservationParts(reservation)[0]}</small><strong>{reservationParts(reservation)[1]}</strong></div><div><p>CONFIRMED</p><h2>{alley.name}</h2><span>{reservation.time} · Lane {String(reservation.lane).padStart(2, '0')} · {reservation.duration} {reservation.duration === 1 ? 'hour' : 'hours'}</span></div><button onClick={onReserve}>Book another →</button></article>)}</div> : <div className="member-reservations-empty"><span>◯</span><h2>No reservations yet.</h2><p>Choose your preferred date, time, and lane when you are ready to bowl.</p><button onClick={onReserve}>Make a reservation →</button></div>}
     </section>

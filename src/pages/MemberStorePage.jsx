@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import AccountMenu from '../components/AccountMenu'
+import MembershipAlleyMenu from '../components/MembershipAlleyMenu'
 import StoreOrderDialog from '../components/StoreOrderDialog'
 import { productsForAlley } from '../utils/products'
 import './StorePage.css'
 import './MemberStoreHeader.css'
 
-export default function MemberStorePage({ alley, member, onDashboard, onChangeAlley, onAccount, onLogout, onEditStore, hideHeader = false, onPlaceOrder, staffRole }) {
+export default function MemberStorePage({ alley, membershipAlleys, member, onDashboard, onSelectAlley, onAccount, onLogout, onEditStore, hideHeader = false, onPlaceOrder, staffRole }) {
   const [notice, setNotice] = useState('')
   const [selectedProduct, setSelectedProduct] = useState(null)
   const products = productsForAlley(alley)
@@ -20,7 +21,7 @@ export default function MemberStorePage({ alley, member, onDashboard, onChangeAl
       <AccountMenu member={member} onOpenSettings={onAccount} onLogout={onLogout} />
     </header>}
     <section className="store-shell">
-      {!hideHeader && onChangeAlley && <div className="store-change-alley-row"><button onClick={onChangeAlley}>Change Alley</button></div>}
+      {!hideHeader && onSelectAlley && <div className="store-change-alley-row"><MembershipAlleyMenu alleys={membershipAlleys} currentAlley={alley} onSelect={onSelectAlley} /></div>}
       <div className="store-alley-banner"><div className="store-alley-mark">{alley.name.split(' ').map(word => word[0]).join('').slice(0, 2)}</div><div><p>SHOPPING AT</p><h1>{alley.name}</h1><span>{alley.area} · Products offered directly by your bowling alley</span></div></div>
       <div className="store-heading"><div><p>ALLEY PRODUCTS</p><h2>Everything for your <em>next game.</em></h2></div><span>{products.length} products</span></div>
       {notice && <p className="store-notice">{notice}</p>}

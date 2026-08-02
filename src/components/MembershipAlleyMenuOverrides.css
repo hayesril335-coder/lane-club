@@ -1,0 +1,36 @@
+.membership-alley-trigger > span {
+  display: inline !important;
+  margin: 0 0 0 5px !important;
+  color: inherit !important;
+  font-size: inherit !important;
+  letter-spacing: normal !important;
+}
+
+.membership-alley-dropdown button > span {
+  display: grid !important;
+  margin: 0 !important;
+  color: #17313e !important;
+  font-size: inherit !important;
+  letter-spacing: normal !important;
+}
+
+.membership-alley-dropdown button small {
+  letter-spacing: normal;
+}
+
+.member-welcome .membership-alley-trigger {
+  height: 41px;
+  border: 0;
+  border-radius: 3px;
+  background: #d55c50;
+  color: #fff9ed;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 800px) {
+  .member-welcome > .membership-alley-menu {
+    margin-top: 19px;
+  }
+}
