@@ -3,8 +3,8 @@ import GoogleAuthButton from '../components/GoogleAuthButton'
 import { signIn, signInWithGoogleCredential, signUp } from '../services/authService'
 import './OwnerAuthPage.css'
 
-export default function OwnerAuthPage({ onBack, onContinue }) {
-  const [mode, setMode] = useState('login')
+export default function OwnerAuthPage({ onBack, onContinue, initialMode = 'signup' }) {
+  const [mode, setMode] = useState(initialMode)
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
 

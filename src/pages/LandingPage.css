@@ -1,0 +1,20 @@
+.alley-login-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.alley-login-actions button {
+  flex: 1;
+  border: 1px solid #fff0d8;
+  border-radius: 3px;
+  background: transparent;
+  color: #fff8e9;
+  padding: 12px 10px;
+  font-weight: 700;
+}
+
+.alley-login-actions button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}

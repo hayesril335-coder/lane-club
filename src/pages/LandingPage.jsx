@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Brand from '../components/Brand'
+import './LandingPage.css'
 
 const Arrow = () => <span aria-hidden="true">→</span>
 
@@ -7,6 +8,10 @@ export default function LandingPage({ onNavigate }) {
   const [notice, setNotice] = useState('')
 
   const showNextStep = (role) => {
+    if (role === 'Owner login') {
+      onNavigate('owner-auth-login')
+      return
+    }
     if (role === 'Member login') {
       onNavigate('member-auth-login')
       return
@@ -65,7 +70,14 @@ export default function LandingPage({ onNavigate }) {
 
       <section className="alley-banner shell" id="for-alleys">
         <div><p className="eyebrow">FOR BOWLING ALLEYS</p><h2>Keep lanes busy.<br /><em>Keep bowlers coming back.</em></h2></div>
-        <div><p>Offer members a seamless reservation experience and grow dependable monthly revenue.</p><button className="light-button" onClick={() => showNextStep('Bowling alley owner')}>Partner with Lane Club <Arrow /></button></div>
+        <div>
+          <p>Offer members a seamless reservation experience and grow dependable monthly revenue.</p>
+          <div className="alley-login-actions">
+            <button onClick={() => showNextStep('Owner login')}>Owner Login</button>
+            <button disabled title="Employee accounts are coming soon">Employee Login</button>
+          </div>
+          <button className="light-button" onClick={() => showNextStep('Bowling alley owner')}>Partner with Lane Club <Arrow /></button>
+        </div>
       </section>
     </main>
   )
