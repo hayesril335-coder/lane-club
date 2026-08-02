@@ -252,7 +252,7 @@ export default function App() {
   const memberNav = active => <MemberBottomNav active={active} onSearch={() => setPage('find-alley')} onReservations={() => setPage('member-reservations')} onPurchase={() => setPage('member-store')} />
   const memberPage = (content, active) => <div className="with-bottom-nav">{content}{memberNav(active)}</div>
   const ownerNavProps = { onOverview: () => setPage('owner-dashboard'), onReservations: () => setPage('reservation-management'), onNewReservation: () => setPage('owner-walk-in-reservation'), onStore: () => setPage('owner-store'), onOrders: () => setPage('owner-orders') }
-  const ownerPage = (content, active) => <div className="with-bottom-nav"><OwnerSettingsShortcut onClick={() => setPage('owner-settings')} />{content}<OwnerBottomNav {...ownerNavProps} active={active} /></div>
+  const ownerPage = (content, active) => <div className="with-bottom-nav owner-account-page"><OwnerSettingsShortcut onClick={() => setPage('owner-settings')} />{content}<OwnerBottomNav {...ownerNavProps} active={active} /></div>
   const employeeLogout = () => { localStorage.removeItem('lane-club-employee-code'); setEmployeeAlley(null); setOwnerReservations([]); setPage('home') }
   const employeePage = (content, active) => <EmployeeWorkspace alley={employeeAlley} active={active} onReservations={() => setPage('employee-reservations')} onNewReservation={() => setPage('employee-add')} onStore={() => setPage('employee-store')} onOrders={() => setPage('employee-orders')} onLogout={employeeLogout}>{content}</EmployeeWorkspace>
 
