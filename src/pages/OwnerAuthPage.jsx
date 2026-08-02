@@ -4,7 +4,7 @@ import { signIn, signInWithGoogleCredential, signUp } from '../services/authServ
 import './OwnerAuthPage.css'
 
 export default function OwnerAuthPage({ onBack, onContinue }) {
-  const [mode, setMode] = useState('signup')
+  const [mode, setMode] = useState('login')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -25,7 +25,7 @@ export default function OwnerAuthPage({ onBack, onContinue }) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
     const values = { email: form.get('email'), password: form.get('password'), fullName: form.get('fullName') || '' }
-    finish(() => mode === 'signup' ? signUp({ ...values, role: 'owner' }) : signIn(values), form.get('alleyName') || '')
+    finish(() => mode === 'signup' ? signUp({ ...values, role: 'owner' }) : signIn(values))
   }
 
   const googleCredential = useCallback(idToken => finish(() => signInWithGoogleCredential(idToken, 'owner')), [])
@@ -41,7 +41,7 @@ export default function OwnerAuthPage({ onBack, onContinue }) {
         <GoogleAuthButton disabled={busy} onCredential={googleCredential} onError={googleError} role="owner" />
         <div className="auth-divider">or use email</div>
         <form className="owner-form" onSubmit={submit}>
-          {mode === 'signup' && <><label>Your name<input name="fullName" required /></label><label>Bowling alley name<input name="alleyName" required /></label></>}
+          {mode === 'signup' && <label>Your name<input name="fullName" required /></label>}
           <label>Business email<input name="email" type="email" required /></label>
           <label>Password<input name="password" type="password" minLength="8" required /></label>
           <button className="owner-submit" disabled={busy}>{busy ? 'Please wait…' : mode === 'signup' ? 'Start setting up →' : 'Log in to dashboard →'}</button>

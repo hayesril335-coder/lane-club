@@ -1,20 +1,40 @@
-import { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 import './ReservationManagementPage.css'
 
-const seedBookings = [
-  { id: 1, time: '4:00 PM', end: '6:00 PM', lane: 'Lane 03', name: 'Olivia Chen', initials: 'OC', hours: '2 hours', status: 'Confirmed' },
-  { id: 2, time: '5:00 PM', end: '6:30 PM', lane: 'Lane 09', name: 'Noah Williams', initials: 'NW', hours: '1.5 hours', status: 'Confirmed' },
-  { id: 3, time: '6:00 PM', end: '8:00 PM', lane: 'Lane 04', name: 'Maya Thompson', initials: 'MT', hours: '2 hours', status: 'Checked in' },
-  { id: 4, time: '6:30 PM', end: '8:00 PM', lane: 'Lane 11', name: 'James Wilson', initials: 'JW', hours: '1.5 hours', status: 'Confirmed' },
-  { id: 5, time: '7:00 PM', end: '9:00 PM', lane: 'Lane 02', name: 'Jordan Lee', initials: 'JL', hours: '2 hours', status: 'Checked in' },
-  { id: 6, time: '7:30 PM', end: '8:30 PM', lane: 'Lane 15', name: 'Alex Morgan', initials: 'AM', hours: '1 hour', status: 'Confirmed' },
-]
+const hours = Array.from({ length: 24 }, (_, hour) => hour)
+const pad = value => String(value).padStart(2, '0')
+const localDate = date => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+const formatHour = hour => `${hour % 12 || 12}:00 ${hour < 12 ? 'AM' : 'PM'}`
+const parseHour = reservation => {
+  if (reservation.startsAt) return new Date(reservation.startsAt).getHours()
+  const match = String(reservation.time || '').match(/(\d{1,2})(?::\d{2})?\s*(AM|PM)?/i)
+  if (!match) return 0
+  let hour = Number(match[1]) % 12
+  if (match[2]?.toUpperCase() === 'PM') hour += 12
+  return hour
+}
+const duration = reservation => Number.parseFloat(reservation.durationHours ?? reservation.hours ?? reservation.duration ?? 1) || 1
+const reservationDate = reservation => reservation.date || (reservation.createdAt ? localDate(new Date(reservation.createdAt)) : localDate(new Date()))
 
-export default function ReservationManagementPage({ bookings: ownerBookings = [], onBack, onNewReservation }) {
-  const [filter, setFilter] = useState('All reservations')
+export default function ReservationManagementPage({ bookings = [], alley }) {
+  const [selectedDate, setSelectedDate] = useState(() => localDate(new Date()))
+  const [selectedHour, setSelectedHour] = useState(() => new Date().getHours())
   const [selected, setSelected] = useState(null)
-  const [notice, setNotice] = useState('')
-  useEffect(() => { if (notice.startsWith('New reservation form')) onNewReservation() }, [notice, onNewReservation])
-  const visible = [...ownerBookings, ...seedBookings].filter(b => filter === 'All reservations' || b.status === filter)
-  return <main className="reservations-page"><aside className="reservations-nav"><a className="brand dash-brand" href="#home" onClick={(e) => { e.preventDefault(); onBack() }}><span className="brand-mark"><i /><i /><i /></span>LANE CLUB</a><div className="alley-switch"><span>SL</span><div><strong>Sunset Lanes</strong><small>Owner account</small></div><b>⌄</b></div><nav><button onClick={onBack}>▦ Overview</button><button>♙ Members <span>148</span></button><button className="selected">▤ Reservations</button><button>◫ Lanes</button><button>⚙ Settings</button></nav><button className="dash-logout" onClick={onBack}>← Log out</button></aside><section className="reservations-content"><header className="reservations-header"><div><p>RESERVATION MANAGEMENT</p><h1>Today's <em>reservations.</em></h1><span>Thursday, June 12 · 6 reservations scheduled</span></div><button className="new-booking" onClick={() => setNotice('New reservation form will be connected to the customer booking flow.')}>+ New reservation</button></header>{notice && <p className="reservation-notice">{notice}</p>}<div className="date-strip"><button>‹</button>{['MON 9','TUE 10','WED 11','THU 12','FRI 13','SAT 14','SUN 15'].map((day, index) => <button key={day} className={index === 3 ? 'active' : ''}><small>{day.slice(0, 3)}</small><b>{day.slice(4)}</b></button>)}<button>›</button><span>June 2026</span></div><div className="reservations-toolbar"><div className="reservation-filters">{['All reservations','Confirmed','Checked in'].map(item => <button key={item} className={filter === item ? 'active' : ''} onClick={() => setFilter(item)}>{item}</button>)}</div><label className="reservation-search">⌕ <input placeholder="Search member or lane" /></label></div><div className="schedule-card"><div className="schedule-head"><span>TIME</span><span>LANE</span><span>MEMBER</span><span>DURATION</span><span>STATUS</span><span /></div>{visible.map(item => <button className="schedule-row" key={item.id} onClick={() => setSelected(item)}><b>{item.time}<small>until {item.end}</small></b><span className="lane-badge">{item.lane}</span><span className="schedule-member"><i>{item.initials}</i>{item.name}</span><span>{item.hours}</span><span className={`booking-status ${item.status.toLowerCase().replace(' ', '-')}`}>{item.status}</span><span>›</span></button>)}</div><div className="schedule-summary"><span><b>6</b> total reservations</span><span><b>10</b> member hours booked</span><span><b>12</b> lanes available after 8:30 PM</span></div></section>{selected && <div className="booking-backdrop" onClick={() => setSelected(null)}><aside className="booking-drawer" onClick={e => e.stopPropagation()}><button className="drawer-close" onClick={() => setSelected(null)}>×</button><p>RESERVATION DETAILS</p><h2>{selected.name}</h2><div className="booking-person"><i>{selected.initials}</i><span>Lane Club member</span></div><div className="booking-time"><strong>{selected.time} – {selected.end}</strong><span>{selected.lane} · {selected.hours}</span></div><div className={`drawer-booking-status ${selected.status.toLowerCase().replace(' ', '-')}`}>{selected.status}</div><div className="booking-actions"><button onClick={() => setNotice(`${selected.name} was marked checked in.`)}>Check in member</button><button>Move reservation</button><button className="cancel" onClick={() => { setNotice(`${selected.name}'s reservation was cancelled.`); setSelected(null) }}>Cancel reservation</button></div><p className="booking-rule">This reservation uses {selected.hours} of the member's four available weekly reservation hours.</p></aside></div>}</main>
+  const laneCount = Math.max(1, Number(alley?.lanes) || 16)
+  const dayBookings = useMemo(() => bookings.filter(item => reservationDate(item) === selectedDate), [bookings, selectedDate])
+  const lanes = Array.from({ length: laneCount }, (_, index) => `Lane ${pad(index + 1)}`)
+  const reservationsAtHour = lane => dayBookings.filter(item => item.lane === lane && selectedHour >= parseHour(item) && selectedHour < parseHour(item) + duration(item))
+
+  return <main className="reservations-page"><section className="reservations-content">
+    <header className="reservations-header"><div><p>RESERVATION SCHEDULE</p><h1>See every <em>lane.</em></h1><span>Select an hour, then choose a highlighted lane to view the customer’s details.</span></div></header>
+    <div className="schedule-controls"><label>Date<input type="date" value={selectedDate} onChange={event => { setSelectedDate(event.target.value); setSelected(null) }} /></label><strong>{dayBookings.length} reservation{dayBookings.length === 1 ? '' : 's'} on this day</strong></div>
+    <div className="hour-strip" aria-label="Hours of the day">{hours.map(hour => <button key={hour} className={selectedHour === hour ? 'active' : ''} onClick={() => { setSelectedHour(hour); setSelected(null) }}>{formatHour(hour)}</button>)}</div>
+    <section className="lane-hour-card"><div className="lane-hour-heading"><div><p>SELECTED TIME</p><h2>{formatHour(selectedHour)}</h2></div><div className="lane-key"><span><b className="available" /> Available</span><span><b className="reserved" /> Reserved</span></div></div>
+      <div className="lane-hour-grid">{lanes.map(lane => {
+        const matches = reservationsAtHour(lane)
+        const booking = matches[0]
+        return <button key={lane} className={booking ? 'reserved' : 'available'} onClick={() => booking && setSelected(booking)} aria-label={`${lane}, ${booking ? `reserved by ${booking.name}` : 'available'}`}><strong>{lane}</strong><span>{booking ? booking.name : 'Available'}</span></button>
+      })}</div>
+    </section>
+  </section>{selected && <div className="booking-backdrop" onClick={() => setSelected(null)}><aside className="booking-drawer" onClick={event => event.stopPropagation()}><button className="drawer-close" onClick={() => setSelected(null)}>×</button><p>RESERVATION DETAILS</p><h2>{selected.name}</h2><div className="booking-person"><i>{selected.initials || String(selected.name || '?').split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase()}</i><span>{selected.phone || selected.email || 'No contact details provided'}</span></div><div className="booking-time"><strong>{selected.time || formatHour(parseHour(selected))}</strong><span>{selected.lane} · {duration(selected)} hour{duration(selected) === 1 ? '' : 's'}</span></div><dl className="booking-details"><div><dt>Payment</dt><dd>{selected.paymentMethod === 'card' ? 'Card / POS' : 'Cash in person'}</dd></div><div><dt>Amount</dt><dd>${Number(selected.amount || 0).toFixed(2)}</dd></div><div><dt>Status</dt><dd>{selected.status || 'Confirmed'}</dd></div></dl></aside></div>}</main>
 }
