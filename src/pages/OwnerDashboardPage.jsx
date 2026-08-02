@@ -1,5 +1,6 @@
 import './OwnerDashboardPage.css'
 import './OwnerLeagueMetrics.css'
+import './OwnerDashboardSpacing.css'
 
 const durationHours = reservation => Number.parseFloat(reservation.durationHours ?? reservation.hours ?? reservation.duration ?? 0) || 0
 

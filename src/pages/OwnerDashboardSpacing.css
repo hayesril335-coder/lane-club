@@ -1,0 +1,5 @@
+@media (max-width: 700px) {
+  .owner-account-page .dashboard-page .dash-content {
+    padding-top: 72px;
+  }
+}
