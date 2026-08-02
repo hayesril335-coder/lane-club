@@ -30,7 +30,6 @@ import OwnerBottomNav from './components/OwnerBottomNav'
 import EmployeeWorkspace from './components/EmployeeWorkspace'
 import OwnerSettingsShortcut from './components/OwnerSettingsShortcut'
 import { hasActiveMembership } from './utils/demoMode'
-import { isReservationActive } from './utils/reservations'
 import { hasMembershipAt, memberForAlley, membershipAlleyIds } from './utils/memberships'
 import { completeGoogleRedirect, observeAuthState, signInWithGoogleCredential, signOut, updateLoginCredentials } from './services/authService'
 import { findAlleyByEmployeeCode, loadAccount, loadAlley, loadAlleys, saveAccount, saveAlley } from './services/accountService'
@@ -59,21 +58,44 @@ function mergePublicAlleys(savedAlleys) {
 }
 
 const pendingOrdersKey = ownerId => `lane-club-employee-orders-${ownerId}`
+const pendingReservationsKey = ownerId => `lane-club-employee-reservations-${ownerId}`
 const uniqueOrders = orders => [...new Map(orders.map(order => [order.id, order])).values()]
+const uniqueReservations = reservations => {
+  const seen = new Set()
+  return reservations.filter(reservation => {
+    if (!reservation.id) return true
+    if (seen.has(reservation.id)) return false
+    seen.add(reservation.id)
+    return true
+  })
+}
 const pendingEmployeeOrders = ownerId => {
   try { return JSON.parse(localStorage.getItem(pendingOrdersKey(ownerId)) || '[]') } catch { return [] }
 }
-const withPendingEmployeeOrders = alley => {
+const pendingEmployeeReservations = ownerId => {
+  try { return JSON.parse(localStorage.getItem(pendingReservationsKey(ownerId)) || '[]') } catch { return [] }
+}
+const withPendingEmployeeData = alley => {
   const ownerId = alley?.ownerId || alley?.id
-  return !ownerId ? alley : { ...alley, orders: uniqueOrders([...(alley.orders || []), ...pendingEmployeeOrders(ownerId)]) }
+  return !ownerId ? alley : {
+    ...alley,
+    orders: uniqueOrders([...(alley.orders || []), ...pendingEmployeeOrders(ownerId)]),
+    reservations: uniqueReservations([...(alley.reservations || []), ...pendingEmployeeReservations(ownerId)]),
+  }
 }
 const loadOwnerAlleyWithPendingOrders = async ownerId => {
   let alley = await loadAlley(ownerId)
   const queuedOrders = pendingEmployeeOrders(ownerId)
-  if (alley && queuedOrders.length) {
-    alley = { ...alley, orders: uniqueOrders([...(alley.orders || []), ...queuedOrders]) }
+  const queuedReservations = pendingEmployeeReservations(ownerId)
+  if (alley && (queuedOrders.length || queuedReservations.length)) {
+    alley = {
+      ...alley,
+      orders: uniqueOrders([...(alley.orders || []), ...queuedOrders]),
+      reservations: uniqueReservations([...(alley.reservations || []), ...queuedReservations]),
+    }
     await saveAlley(ownerId, alley)
     localStorage.removeItem(pendingOrdersKey(ownerId))
+    localStorage.removeItem(pendingReservationsKey(ownerId))
   }
   return alley
 }
@@ -136,7 +158,7 @@ export default function App() {
           const employeeCode = localStorage.getItem('lane-club-employee-code')
           if (employeeCode) {
             const foundAlley = await findAlleyByEmployeeCode(employeeCode).catch(() => null)
-            const alley = foundAlley ? withPendingEmployeeOrders(foundAlley) : null
+            const alley = foundAlley ? withPendingEmployeeData(foundAlley) : null
             if (alley) {
               setEmployeeAlley(alley)
               setOwnerReservations(Array.isArray(alley.reservations) ? alley.reservations : [])
@@ -161,15 +183,6 @@ export default function App() {
       return reservations.length === current.reservations.length && usedHours === current.usedHours ? current : { ...current, reservations, usedHours }
     })
   }, [now])
-  useEffect(() => {
-    if (!ownerReservations.length) return
-    const activeReservations = ownerReservations.filter(reservation => isReservationActive(reservation, now))
-    if (activeReservations.length === ownerReservations.length) return
-    setOwnerReservations(activeReservations)
-    const nextAlley = { ...(ownerAlley || {}), reservations: activeReservations }
-    setOwnerAlley(nextAlley)
-    if (user) saveAlley(user.uid, nextAlley).catch(console.error)
-  }, [now, ownerReservations, ownerAlley, user])
 
   const continueAsMember = async ({ user: authUser, fullName, email } = {}) => {
     setUser(authUser)
@@ -239,9 +252,13 @@ export default function App() {
   }
   const addEmployeeReservation = async reservation => {
     const nextReservation = { ...reservation, createdAt: reservation.createdAt || new Date().toISOString(), date: reservation.date || new Date().toLocaleDateString('en-CA') }
-    const reservations = [...ownerReservations, nextReservation]
+    const reservations = uniqueReservations([...ownerReservations, nextReservation])
     setOwnerReservations(reservations)
-    setEmployeeAlley(current => ({ ...current, reservations }))
+    const nextAlley = { ...employeeAlley, reservations }
+    setEmployeeAlley(nextAlley)
+    const ownerId = employeeAlley?.ownerId || employeeAlley?.id
+    if (!ownerId) throw new Error('This employee account is not connected to a saved alley.')
+    localStorage.setItem(pendingReservationsKey(ownerId), JSON.stringify(uniqueReservations([...pendingEmployeeReservations(ownerId), nextReservation])))
   }
   const addOwnerOrder = async order => saveOwnerAlleyUpdates({ orders: [...(ownerAlley?.orders || []), order] })
   const addEmployeeOrder = async order => {
@@ -280,7 +297,7 @@ export default function App() {
   const employeePage = (content, active) => <EmployeeWorkspace alley={employeeAlley} active={active} onReservations={() => setPage('employee-reservations')} onNewReservation={() => setPage('employee-add')} onStore={() => setPage('employee-store')} onOrders={() => setPage('employee-orders')} onLogout={employeeLogout}>{content}</EmployeeWorkspace>
 
   if (!authReady) return <main className="setup-page"><p className="notice">Loading Lane Club…</p></main>
-  if (page === 'employee-login') return <EmployeeLoginPage onBack={() => setPage('home')} onContinue={foundAlley => { const alley = withPendingEmployeeOrders(foundAlley); localStorage.setItem('lane-club-employee-code', alley.employeeCode); setEmployeeAlley(alley); setOwnerReservations(Array.isArray(alley.reservations) ? alley.reservations : []); setPage('employee-reservations') }} />
+  if (page === 'employee-login') return <EmployeeLoginPage onBack={() => setPage('home')} onContinue={foundAlley => { const alley = withPendingEmployeeData(foundAlley); localStorage.setItem('lane-club-employee-code', alley.employeeCode); setEmployeeAlley(alley); setOwnerReservations(Array.isArray(alley.reservations) ? alley.reservations : []); setPage('employee-reservations') }} />
   if (page === 'member-auth') return <MemberAuthPage onBack={() => setPage('home')} onOwner={() => setPage('owner-auth')} onContinue={continueAsMember} />
   if (page === 'member-auth-login') return <MemberAuthPage initialMode="login" onBack={() => setPage('home')} onOwner={() => setPage('owner-auth')} onContinue={continueAsMember} />
   if (page === 'owner-auth') return <OwnerAuthPage onBack={() => setPage('home')} onContinue={async ({ user: authUser, alleyName }) => { setUser(authUser); const existingAlley = await loadOwnerAlleyWithPendingOrders(authUser.uid); await saveAccount(authUser.uid, { name: authUser.displayName || 'Alley Owner', email: authUser.email, role: 'owner' }); setOwnerAlley(existingAlley || { name: alleyName }); setPage(existingAlley && existingAlley.serviceStatus !== 'cancelled' ? 'owner-dashboard' : 'owner-checkout') }} />
