@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import AccountMenu from '../components/AccountMenu'
 import StoreOrderDialog from '../components/StoreOrderDialog'
 import { productsForAlley } from '../utils/products'
 import './StorePage.css'
+import './MemberStoreHeader.css'
 
-export default function MemberStorePage({ alley, onDashboard, onChangeAlley, onEditStore, hideHeader = false, onPlaceOrder, staffRole }) {
+export default function MemberStorePage({ alley, member, onDashboard, onChangeAlley, onAccount, onLogout, onEditStore, hideHeader = false, onPlaceOrder, staffRole }) {
   const [notice, setNotice] = useState('')
   const [selectedProduct, setSelectedProduct] = useState(null)
   const products = productsForAlley(alley)
@@ -13,12 +15,12 @@ export default function MemberStorePage({ alley, onDashboard, onChangeAlley, onE
   }
 
   return <main className="store-page member-store-page">
-    {!hideHeader && <header>
-      <button onClick={onDashboard}>← Dashboard</button>
-      <strong>LANE CLUB</strong>
-      {onEditStore ? <button className="edit-store-button" onClick={onEditStore}>Edit Store</button> : onChangeAlley ? <button onClick={onChangeAlley}>Change Alley</button> : <span>Alley store</span>}
+    {!hideHeader && <header className="finder-header member-store-member-header">
+      <a className="brand finder-brand" href="#dashboard" onClick={event => { event.preventDefault(); onDashboard() }}><span className="brand-mark"><i /><i /><i /></span>LANE CLUB</a>
+      <AccountMenu member={member} onOpenSettings={onAccount} onLogout={onLogout} />
     </header>}
     <section className="store-shell">
+      {!hideHeader && onChangeAlley && <div className="store-change-alley-row"><button onClick={onChangeAlley}>Change Alley</button></div>}
       <div className="store-alley-banner"><div className="store-alley-mark">{alley.name.split(' ').map(word => word[0]).join('').slice(0, 2)}</div><div><p>SHOPPING AT</p><h1>{alley.name}</h1><span>{alley.area} · Products offered directly by your bowling alley</span></div></div>
       <div className="store-heading"><div><p>ALLEY PRODUCTS</p><h2>Everything for your <em>next game.</em></h2></div><span>{products.length} products</span></div>
       {notice && <p className="store-notice">{notice}</p>}

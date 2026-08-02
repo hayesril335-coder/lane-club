@@ -1,0 +1,37 @@
+.member-store-page > .member-store-member-header {
+  height: 75px;
+  padding: 0 max(24px, calc((100% - 1200px) / 2));
+  background: #fffdf7;
+  color: #173345;
+  border-bottom: 1px solid #dde0d9;
+}
+
+.member-store-member-header .account-menu {
+  margin-left: auto;
+}
+
+.store-change-alley-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: -18px 0 18px;
+}
+
+.store-change-alley-row button {
+  border: 1px solid #cbd3cc;
+  border-radius: 4px;
+  background: #fffdf8;
+  color: #17313e;
+  padding: 10px 14px;
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .member-store-page > .member-store-member-header {
+    height: 75px;
+    padding: 0 18px;
+  }
+
+  .store-change-alley-row {
+    margin: -22px 0 16px;
+  }
+}
