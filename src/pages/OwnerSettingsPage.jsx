@@ -1,12 +1,16 @@
 import { useState } from 'react'
 import EmployeeAccessSettings from '../components/EmployeeAccessSettings'
+import { prepareBannerImage } from '../utils/images'
 import './OwnerSettingsPage.css'
 import './OwnerSettingsActions.css'
+import './OwnerBannerSettings.css'
 
 const lastFour = value => String(value || '').replace(/\D/g, '').slice(-4)
 
 export default function OwnerSettingsPage({ alley, email, onEditStore, onLanes, onLeagueSetup, onSave, onUpdateCredentials, onCancelService, onLogout }) {
   const [name, setName] = useState(alley?.name || '')
+  const [address, setAddress] = useState(alley?.address || '')
+  const [bannerImage, setBannerImage] = useState(alley?.bannerImage || '')
   const [message, setMessage] = useState('')
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -15,6 +19,7 @@ export default function OwnerSettingsPage({ alley, email, onEditStore, onLanes, 
   const saveCredentials = event => { event.preventDefault(); const form = new FormData(event.currentTarget); return run(async () => { await onUpdateCredentials({ currentPassword: String(form.get('currentPassword')), newEmail: String(form.get('newEmail')), newPassword: String(form.get('newPassword')) }); event.currentTarget.reset(); setMessage('Login email and password updated.') }) }
   const saveBank = event => { event.preventDefault(); const form = new FormData(event.currentTarget); return run(() => save({ payoutBank: { bankName: String(form.get('bankName')), accountHolder: String(form.get('accountHolder')), routingLast4: lastFour(form.get('routingNumber')), accountLast4: lastFour(form.get('accountNumber')) } }, 'Payout bank account saved.')) }
   const saveBilling = event => { event.preventDefault(); const form = new FormData(event.currentTarget); const cardNumber = String(form.get('cardNumber')); return run(() => save({ ownerBillingMethod: { cardholder: String(form.get('cardholder')), brand: cardNumber.startsWith('4') ? 'Visa' : 'Card', last4: lastFour(cardNumber), expiration: String(form.get('expiration')) } }, 'Lane Club subscription payment method saved.')) }
+  const chooseBanner = event => run(async () => { const file = event.target.files?.[0]; if (!file) return; const image = await prepareBannerImage(file); setBannerImage(image); setMessage('Banner picture is ready to save.') })
 
   return <main className="owner-settings"><section>
     <p>ALLEY SETTINGS</p>
@@ -26,7 +31,18 @@ export default function OwnerSettingsPage({ alley, email, onEditStore, onLanes, 
       <button disabled={busy}>Save alley name</button>
     </form>
 
+    <form onSubmit={event => { event.preventDefault(); run(() => save({ address: address.trim() }, 'Bowling alley address saved.')) }}>
+      <h2>Change address</h2><p>This address is used when customers tap Get directions.</p>
+      <label>Full bowling alley address<input value={address} onChange={event => setAddress(event.target.value)} required placeholder="123 Main Street, Los Angeles, CA 90001" /></label>
+      <button disabled={busy}>Save address</button>
+    </form>
+
     <article><h2>Store</h2><p>Edit product categories, pictures, prices, titles, and descriptions.</p><button onClick={onEditStore}>Edit store →</button></article>
+    <form onSubmit={event => { event.preventDefault(); run(() => save({ bannerImage }, 'Bowling alley banner saved.')) }}>
+      <h2>Banner picture</h2><p>Add the image customers see at the top of your bowling alley page.</p>
+      {bannerImage && <img className="banner-settings-preview" src={bannerImage} alt="Bowling alley banner preview" />}
+      <div className="banner-settings-actions"><label>Choose picture<input type="file" accept="image/*" onChange={chooseBanner} /></label><button disabled={busy || !bannerImage}>Save banner</button>{bannerImage && <button className="banner-remove" type="button" onClick={() => run(async () => { await save({ bannerImage: '' }, 'Banner picture removed.'); setBannerImage('') })}>Remove</button>}</div>
+    </form>
     <article><h2>Lane names</h2><p>Rename lanes and manage their availability in lane management.</p><button onClick={onLanes}>Manage lane names →</button></article>
     <article><h2>Leagues</h2><p>Create leagues, set pricing, and choose league lanes and dates.</p><button className="league-setup-link" onClick={onLeagueSetup}>Setup a league →</button></article>
 

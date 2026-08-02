@@ -249,6 +249,7 @@ export default function App() {
     const nextAlley = { ...(ownerAlley || {}), ...updates }
     setOwnerAlley(nextAlley)
     if (user) await saveAlley(user.uid, nextAlley)
+    setAvailableAlleys(current => current.map(alley => alley.ownerId === user?.uid || alley.id === user?.uid ? { ...alley, ...updates } : alley))
   }
   const addLeague = async league => saveOwnerAlleyUpdates({ leagues: [...(ownerAlley?.leagues || []), league] })
   const addLeagueMember = async (leagueId, leagueMember) => {

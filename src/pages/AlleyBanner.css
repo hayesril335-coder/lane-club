@@ -1,0 +1,1 @@
+.details-banner-image{position:absolute;z-index:0;inset:0;width:100%;height:100%;object-fit:cover}.details-photo.has-banner:before{z-index:1;background:linear-gradient(180deg,#07131d0d 35%,#07131da8)}.details-photo.has-banner>strong{z-index:2;text-shadow:0 2px 9px #07131dcc}
