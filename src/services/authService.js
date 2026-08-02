@@ -1,4 +1,4 @@
-import { browserLocalPersistence, createUserWithEmailAndPassword, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, setPersistence, signInWithCredential, signInWithEmailAndPassword, signOut as firebaseSignOut, updateProfile } from 'firebase/auth'
+import { browserLocalPersistence, createUserWithEmailAndPassword, EmailAuthProvider, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, reauthenticateWithCredential, setPersistence, signInWithCredential, signInWithEmailAndPassword, signOut as firebaseSignOut, updateEmail, updatePassword, updateProfile } from 'firebase/auth'
 import { firebaseAuth } from '../lib/firebaseClient'
 
 export async function signUp({ email, password, fullName, role = 'member' }) {
@@ -16,6 +16,17 @@ export async function signIn({ email, password }) {
 
 export async function signOut() {
   return firebaseSignOut(firebaseAuth)
+}
+
+export async function updateLoginCredentials({ currentPassword, newEmail, newPassword }) {
+  const user = firebaseAuth.currentUser
+  if (!user?.email) throw new Error('No signed-in email account was found.')
+  const usesPassword = user.providerData.some(provider => provider.providerId === 'password')
+  if (!usesPassword) throw new Error('This account uses Google sign-in. Manage its email and password through Google.')
+  await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, currentPassword))
+  if (newPassword) await updatePassword(user, newPassword)
+  if (newEmail && newEmail !== user.email) await updateEmail(user, newEmail)
+  return user
 }
 
 export async function signInWithGoogleCredential(idToken, role = 'member') {

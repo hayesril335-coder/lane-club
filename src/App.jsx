@@ -26,7 +26,7 @@ import MemberBottomNav from './components/MemberBottomNav'
 import OwnerBottomNav from './components/OwnerBottomNav'
 import { hasActiveMembership } from './utils/demoMode'
 import { isReservationActive } from './utils/reservations'
-import { completeGoogleRedirect, observeAuthState, signInWithGoogleCredential, signOut } from './services/authService'
+import { completeGoogleRedirect, observeAuthState, signInWithGoogleCredential, signOut, updateLoginCredentials } from './services/authService'
 import { loadAccount, loadAlley, loadAlleys, saveAccount, saveAlley } from './services/accountService'
 
 const newMember = { name: 'New Member', email: '', phone: '', hasMembership: false, usedHours: 0, reservations: [] }
@@ -88,9 +88,9 @@ export default function App() {
           if (publicAlleys.length) setAvailableAlleys(mergePublicAlleys(publicAlleys))
           if (pendingGoogleRole) {
             localStorage.removeItem('lane-club-google-role')
-            setPage(pendingGoogleRole === 'owner' ? (alley ? 'owner-dashboard' : 'owner-checkout') : 'member-dashboard')
+            setPage(pendingGoogleRole === 'owner' ? (alley && alley.serviceStatus !== 'cancelled' ? 'owner-dashboard' : 'owner-checkout') : 'member-dashboard')
           } else if (page === 'home' || page === 'member-auth' || page === 'owner-auth') {
-            setPage(account?.role === 'owner' ? (alley ? 'owner-dashboard' : 'owner-checkout') : 'member-dashboard')
+            setPage(account?.role === 'owner' ? (alley && alley.serviceStatus !== 'cancelled' ? 'owner-dashboard' : 'owner-checkout') : 'member-dashboard')
           }
         }
         setAuthReady(true)
@@ -188,6 +188,16 @@ export default function App() {
     const leagues = (ownerAlley?.leagues || []).map(league => league.id === leagueId ? { ...league, members: [...(league.members || []), leagueMember] } : league)
     await saveOwnerAlleyUpdates({ leagues })
   }
+  const updateOwnerCredentials = async details => {
+    const authUser = await updateLoginCredentials(details)
+    const email = authUser.email || details.newEmail || member.email
+    setMember(current => ({ ...current, email }))
+    if (user) await saveAccount(user.uid, { email })
+  }
+  const cancelOwnerService = async () => {
+    await saveOwnerAlleyUpdates({ serviceStatus: 'cancelled', cancelledAt: new Date().toISOString() })
+    await logout()
+  }
 
   const memberNav = active => <MemberBottomNav active={active} onSearch={() => setPage('find-alley')} onReservations={() => setPage('member-reservations')} onPurchase={() => setPage('member-store')} />
   const memberPage = (content, active) => <div className="with-bottom-nav">{content}{memberNav(active)}</div>
@@ -196,8 +206,8 @@ export default function App() {
 
   if (!authReady) return <main className="setup-page"><p className="notice">Loading Lane Club…</p></main>
   if (page === 'member-auth') return <MemberAuthPage onBack={() => setPage('home')} onOwner={() => setPage('owner-auth')} onContinue={continueAsMember} />
-  if (page === 'owner-auth') return <OwnerAuthPage onBack={() => setPage('home')} onContinue={async ({ user: authUser, alleyName }) => { setUser(authUser); const existingAlley = await loadAlley(authUser.uid); await saveAccount(authUser.uid, { name: authUser.displayName || 'Alley Owner', email: authUser.email, role: 'owner' }); setOwnerAlley(existingAlley || { name: alleyName }); setPage(existingAlley ? 'owner-dashboard' : 'owner-checkout') }} />
-  if (page === 'owner-checkout') return <OwnerCheckoutPage onBack={() => setPage('owner-auth')} onContinue={() => setPage('alley-setup')} />
+  if (page === 'owner-auth') return <OwnerAuthPage onBack={() => setPage('home')} onContinue={async ({ user: authUser, alleyName }) => { setUser(authUser); const existingAlley = await loadAlley(authUser.uid); await saveAccount(authUser.uid, { name: authUser.displayName || 'Alley Owner', email: authUser.email, role: 'owner' }); setOwnerAlley(existingAlley || { name: alleyName }); setPage(existingAlley && existingAlley.serviceStatus !== 'cancelled' ? 'owner-dashboard' : 'owner-checkout') }} />
+  if (page === 'owner-checkout') return <OwnerCheckoutPage onBack={() => setPage('owner-auth')} onContinue={async () => { if (ownerAlley?.name) { await saveOwnerAlleyUpdates({ serviceStatus: 'active', cancelledAt: null }); setPage('owner-dashboard') } else setPage('alley-setup') }} />
   if (page === 'alley-setup') return <AlleySetupPage initialAlley={ownerAlley} onBack={() => setPage('owner-checkout')} onComplete={async alley => { setOwnerAlley(alley); if (user) await saveAlley(user.uid, alley); setPage('owner-dashboard') }} />
 
   if (page === 'owner-dashboard') return ownerPage(<OwnerDashboardPage alley={ownerAlley} reservations={ownerReservations} now={now} />, 'overview')
@@ -207,7 +217,7 @@ export default function App() {
   if (page === 'league-signup') return ownerPage(<LeagueSignupPage alley={ownerAlley} onBack={() => setPage('owner-walk-in-reservation')} onPurchase={addLeagueMember} />, 'new')
   if (page === 'league-setup') return ownerPage(<LeagueSetupPage alley={ownerAlley} onBack={() => setPage('owner-settings')} onSaveLeague={addLeague} />, 'settings')
   if (page === 'owner-store') return ownerPage(<OwnerStorePage alley={ownerAlley} onAddProduct={addOwnerProduct} onDeleteProduct={deleteOwnerProduct} onAddCategory={addOwnerCategory} />, 'store')
-  if (page === 'owner-settings') return ownerPage(<OwnerSettingsPage alley={ownerAlley} onBack={() => setPage('owner-dashboard')} onLanes={() => setPage('lane-management')} onLeagueSetup={() => setPage('league-setup')} onSave={saveOwnerAlleyUpdates} />, 'settings')
+  if (page === 'owner-settings') return ownerPage(<OwnerSettingsPage alley={ownerAlley} email={member.email || user?.email || ''} onLanes={() => setPage('lane-management')} onLeagueSetup={() => setPage('league-setup')} onSave={saveOwnerAlleyUpdates} onUpdateCredentials={updateOwnerCredentials} onCancelService={cancelOwnerService} onLogout={logout} />, 'settings')
 
   if (page === 'find-alley') return memberPage(<FindAlleyPage alleys={availableAlleys} onBack={() => setPage('member-dashboard')} onSelect={selectAlley} member={member} onAccount={() => setPage('member-settings')} onLogout={logout} />, 'search')
   if (page === 'alley-details') return memberPage(<AlleyDetailsPage alley={selectedAlley} onBack={() => setPage('member-dashboard')} onJoin={() => hasActiveMembership() ? activateMembership() : setPage('member-checkout')} />, 'search')
