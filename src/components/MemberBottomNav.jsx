@@ -1,9 +1,9 @@
 import './BottomNav.css'
 
-export default function MemberBottomNav({ active, onSearch, onReservations, onPurchase }) {
+export default function MemberBottomNav({ active, onSearch, onDashboard, onPurchase }) {
   const items = [
     ['search', '⌕', 'Search', onSearch],
-    ['reservations', '▣', 'Reservations', onReservations],
+    ['dashboard', '▣', 'Dashboard', onDashboard],
     ['purchase', '◈', 'Purchase', onPurchase],
   ]
   return <nav className="app-bottom-nav member-bottom-nav" aria-label="Member navigation">

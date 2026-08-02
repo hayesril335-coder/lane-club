@@ -90,6 +90,7 @@ export default function App() {
   const [selectedAlley, setSelectedAlley] = useState(defaultAlleys[0])
   const [employeeAlley, setEmployeeAlley] = useState(null)
   const activeMember = memberForAlley(member, selectedAlley)
+  const membershipAlleys = availableAlleys.filter(alley => hasMembershipAt(member, alley))
 
   useEffect(() => {
     let unsubscribe = () => {}
@@ -267,7 +268,7 @@ export default function App() {
     await logout()
   }
 
-  const memberNav = active => <MemberBottomNav active={active} onSearch={() => setPage('find-alley')} onReservations={() => setPage('member-reservations')} onPurchase={() => setPage('member-store')} />
+  const memberNav = active => <MemberBottomNav active={active} onSearch={() => setPage('find-alley')} onDashboard={() => setPage('member-dashboard')} onPurchase={() => setPage('member-store')} />
   const memberPage = (content, active) => <div className="with-bottom-nav">{content}{memberNav(active)}</div>
   const ownerNavProps = { onOverview: () => setPage('owner-dashboard'), onReservations: () => setPage('reservation-management'), onNewReservation: () => setPage('owner-walk-in-reservation'), onStore: () => setPage('owner-store'), onOrders: () => setPage('owner-orders') }
   const ownerPage = (content, active) => <div className="with-bottom-nav owner-account-page"><OwnerSettingsShortcut onClick={() => setPage('owner-settings')} />{content}<OwnerBottomNav {...ownerNavProps} active={active} /></div>
@@ -301,14 +302,15 @@ export default function App() {
   if (employeeAlley && page === 'employee-orders') return employeePage(<OrdersPage alley={employeeAlley} />, 'orders')
 
   if (page === 'find-alley') return memberPage(<FindAlleyPage alleys={availableAlleys} onBack={() => setPage('member-dashboard')} onSelect={selectAlley} member={member} onAccount={() => setPage('member-settings')} onLogout={logout} />, 'search')
+  if (page === 'membership-alleys') return memberPage(<FindAlleyPage alleys={membershipAlleys} onBack={() => setPage('member-dashboard')} onSelect={selectAlley} member={member} onAccount={() => setPage('member-settings')} onLogout={logout} />, '')
   if (page === 'alley-details') return memberPage(<AlleyDetailsPage alley={selectedAlley} onBack={() => setPage('member-dashboard')} onJoin={() => hasActiveMembership() ? activateMembership() : setPage('member-checkout')} />, 'search')
   if (page === 'member-checkout') return memberPage(<MemberCheckoutPage alley={selectedAlley} onBack={() => setPage('alley-details')} onComplete={activateMembership} />, 'search')
-  if (page === 'member-dashboard') return memberPage(<MemberDashboardPage alley={selectedAlley} now={now} onBack={() => setPage('find-alley')} onChangeAlley={() => setPage('find-alley')} onReserve={() => setPage('make-reservation')} onReservations={() => setPage('member-reservations')} onAccount={() => setPage('member-settings')} member={activeMember} />, '')
-  if (page === 'member-reservations') return memberPage(<MemberReservationsPage alley={selectedAlley} member={activeMember} onDashboard={() => setPage('member-dashboard')} onReserve={() => setPage('make-reservation')} onChangeAlley={() => setPage('find-alley')} />, 'reservations')
-  if (page === 'member-store') return memberPage(<MemberStorePage alley={selectedAlley} onDashboard={() => setPage('member-dashboard')} onChangeAlley={() => setPage('find-alley')} />, 'purchase')
-  if (page === 'make-reservation') return memberPage(<MakeReservationPage alley={selectedAlley} onBack={() => setPage('member-reservations')} onConfirm={addReservation} member={activeMember} />, 'reservations')
-  if (page === 'reservation-confirmation') return memberPage(<ReservationConfirmationPage alley={selectedAlley} onDashboard={() => setPage('member-dashboard')} onReserve={() => setPage('make-reservation')} member={activeMember} />, 'reservations')
-  if (page === 'member-settings') return memberPage(<MemberSettingsPage alley={selectedAlley} onBack={() => setPage('member-dashboard')} onLogout={logout} member={activeMember} onUpdate={updates => setMember(current => {
+  if (page === 'member-dashboard') return memberPage(<MemberDashboardPage alley={selectedAlley} now={now} onBack={() => setPage('find-alley')} onChangeAlley={() => setPage('membership-alleys')} onReserve={() => setPage('make-reservation')} onReservations={() => setPage('member-reservations')} onAccount={() => setPage('member-settings')} member={activeMember} />, 'dashboard')
+  if (page === 'member-reservations') return memberPage(<MemberReservationsPage alley={selectedAlley} member={activeMember} onDashboard={() => setPage('member-dashboard')} onReserve={() => setPage('make-reservation')} onChangeAlley={() => setPage('membership-alleys')} />, 'dashboard')
+  if (page === 'member-store') return memberPage(<MemberStorePage alley={selectedAlley} onDashboard={() => setPage('member-dashboard')} onChangeAlley={() => setPage('membership-alleys')} />, 'purchase')
+  if (page === 'make-reservation') return memberPage(<MakeReservationPage alley={selectedAlley} onBack={() => setPage('member-reservations')} onConfirm={addReservation} member={activeMember} />, 'dashboard')
+  if (page === 'reservation-confirmation') return memberPage(<ReservationConfirmationPage alley={selectedAlley} onDashboard={() => setPage('member-dashboard')} onReserve={() => setPage('make-reservation')} member={activeMember} />, 'dashboard')
+  if (page === 'member-settings') return memberPage(<MemberSettingsPage alley={selectedAlley} alleys={availableAlleys} onBack={() => setPage('member-dashboard')} onLogout={logout} member={member} onUpdate={updates => setMember(current => {
     if (updates.hasMembership === false) {
       const memberships = membershipAlleyIds(current).filter(id => String(id) !== String(selectedAlley.id))
       return { ...current, ...updates, membershipAlleyIds: memberships, hasMembership: memberships.length > 0 }
