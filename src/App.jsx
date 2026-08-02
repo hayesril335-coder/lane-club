@@ -12,6 +12,7 @@ import OwnerWalkInReservationPage from './pages/OwnerWalkInReservationPage'
 import OwnerSettingsPage from './pages/OwnerSettingsPage'
 import OwnerStorePage from './pages/OwnerStorePage'
 import OwnerStorefrontPage from './pages/OwnerStorefrontPage'
+import EmployeeLoginPage from './pages/EmployeeLoginPage'
 import LeagueSetupPage from './pages/LeagueSetupPage'
 import LeagueSignupPage from './pages/LeagueSignupPage'
 import FindAlleyPage, { defaultAlleys } from './pages/FindAlleyPage'
@@ -25,10 +26,11 @@ import ReservationConfirmationPage from './pages/ReservationConfirmationPage'
 import MemberSettingsPage from './pages/MemberSettingsPage'
 import MemberBottomNav from './components/MemberBottomNav'
 import OwnerBottomNav from './components/OwnerBottomNav'
+import EmployeeWorkspace from './components/EmployeeWorkspace'
 import { hasActiveMembership } from './utils/demoMode'
 import { isReservationActive } from './utils/reservations'
 import { completeGoogleRedirect, observeAuthState, signInWithGoogleCredential, signOut, updateLoginCredentials } from './services/authService'
-import { loadAccount, loadAlley, loadAlleys, saveAccount, saveAlley } from './services/accountService'
+import { findAlleyByEmployeeCode, loadAccount, loadAlley, loadAlleys, saveAccount, saveAlley } from './services/accountService'
 
 const newMember = { name: 'New Member', email: '', phone: '', hasMembership: false, usedHours: 0, reservations: [] }
 
@@ -63,6 +65,7 @@ export default function App() {
   const [now, setNow] = useState(() => new Date())
   const [ownerReservations, setOwnerReservations] = useState([])
   const [selectedAlley, setSelectedAlley] = useState(defaultAlleys[0])
+  const [employeeAlley, setEmployeeAlley] = useState(null)
 
   useEffect(() => {
     let unsubscribe = () => {}
@@ -92,6 +95,16 @@ export default function App() {
             setPage(pendingGoogleRole === 'owner' ? (alley && alley.serviceStatus !== 'cancelled' ? 'owner-dashboard' : 'owner-checkout') : 'member-dashboard')
           } else if (page === 'home' || page === 'member-auth' || page === 'member-auth-login' || page === 'owner-auth' || page === 'owner-auth-login') {
             setPage(account?.role === 'owner' ? (alley && alley.serviceStatus !== 'cancelled' ? 'owner-dashboard' : 'owner-checkout') : 'member-dashboard')
+          }
+        } else {
+          const employeeCode = localStorage.getItem('lane-club-employee-code')
+          if (employeeCode) {
+            const alley = await findAlleyByEmployeeCode(employeeCode).catch(() => null)
+            if (alley) {
+              setEmployeeAlley(alley)
+              setOwnerReservations(Array.isArray(alley.reservations) ? alley.reservations : [])
+              setPage('employee-reservations')
+            } else localStorage.removeItem('lane-club-employee-code')
           }
         }
         setAuthReady(true)
@@ -179,6 +192,12 @@ export default function App() {
     setOwnerAlley(nextAlley)
     if (user) await saveAlley(user.uid, nextAlley)
   }
+  const addEmployeeReservation = async reservation => {
+    const nextReservation = { ...reservation, createdAt: reservation.createdAt || new Date().toISOString(), date: reservation.date || new Date().toLocaleDateString('en-CA') }
+    const reservations = [...ownerReservations, nextReservation]
+    setOwnerReservations(reservations)
+    setEmployeeAlley(current => ({ ...current, reservations }))
+  }
   const saveOwnerAlleyUpdates = async updates => {
     const nextAlley = { ...(ownerAlley || {}), ...updates }
     setOwnerAlley(nextAlley)
@@ -204,8 +223,11 @@ export default function App() {
   const memberPage = (content, active) => <div className="with-bottom-nav">{content}{memberNav(active)}</div>
   const ownerNavProps = { onOverview: () => setPage('owner-dashboard'), onReservations: () => setPage('reservation-management'), onNewReservation: () => setPage('owner-walk-in-reservation'), onStore: () => setPage('owner-store'), onSettings: () => setPage('owner-settings') }
   const ownerPage = (content, active) => <div className="with-bottom-nav">{content}<OwnerBottomNav {...ownerNavProps} active={active} /></div>
+  const employeeLogout = () => { localStorage.removeItem('lane-club-employee-code'); setEmployeeAlley(null); setOwnerReservations([]); setPage('home') }
+  const employeePage = (content, active) => <EmployeeWorkspace alley={employeeAlley} active={active} onReservations={() => setPage('employee-reservations')} onNewReservation={() => setPage('employee-add')} onStore={() => setPage('employee-store')} onLogout={employeeLogout}>{content}</EmployeeWorkspace>
 
   if (!authReady) return <main className="setup-page"><p className="notice">Loading Lane Club…</p></main>
+  if (page === 'employee-login') return <EmployeeLoginPage onBack={() => setPage('home')} onContinue={alley => { localStorage.setItem('lane-club-employee-code', alley.employeeCode); setEmployeeAlley(alley); setOwnerReservations(Array.isArray(alley.reservations) ? alley.reservations : []); setPage('employee-reservations') }} />
   if (page === 'member-auth') return <MemberAuthPage onBack={() => setPage('home')} onOwner={() => setPage('owner-auth')} onContinue={continueAsMember} />
   if (page === 'member-auth-login') return <MemberAuthPage initialMode="login" onBack={() => setPage('home')} onOwner={() => setPage('owner-auth')} onContinue={continueAsMember} />
   if (page === 'owner-auth') return <OwnerAuthPage onBack={() => setPage('home')} onContinue={async ({ user: authUser, alleyName }) => { setUser(authUser); const existingAlley = await loadAlley(authUser.uid); await saveAccount(authUser.uid, { name: authUser.displayName || 'Alley Owner', email: authUser.email, role: 'owner' }); setOwnerAlley(existingAlley || { name: alleyName }); setPage(existingAlley && existingAlley.serviceStatus !== 'cancelled' ? 'owner-dashboard' : 'owner-checkout') }} />
@@ -222,6 +244,11 @@ export default function App() {
   if (page === 'owner-store') return ownerPage(<OwnerStorefrontPage alley={ownerAlley} onDashboard={() => setPage('owner-dashboard')} onEditStore={() => setPage('owner-store-edit')} />, 'store')
   if (page === 'owner-store-edit') return ownerPage(<OwnerStorePage alley={ownerAlley} onAddProduct={addOwnerProduct} onDeleteProduct={deleteOwnerProduct} onAddCategory={addOwnerCategory} />, 'store')
   if (page === 'owner-settings') return ownerPage(<OwnerSettingsPage alley={ownerAlley} email={member.email || user?.email || ''} onLanes={() => setPage('lane-management')} onLeagueSetup={() => setPage('league-setup')} onSave={saveOwnerAlleyUpdates} onUpdateCredentials={updateOwnerCredentials} onCancelService={cancelOwnerService} onLogout={logout} />, 'settings')
+
+  if (employeeAlley && page === 'employee-reservations') return employeePage(<ReservationManagementPage bookings={ownerReservations} alley={employeeAlley} now={now} />, 'reservations')
+  if (employeeAlley && page === 'employee-add') return employeePage(<OwnerWalkInReservationPage alley={employeeAlley} onLeagueSignup={() => setPage('employee-league-signup')} onComplete={async reservation => { await addEmployeeReservation(reservation); setPage('employee-reservations') }} />, 'new')
+  if (employeeAlley && page === 'employee-league-signup') return employeePage(<LeagueSignupPage alley={employeeAlley} onBack={() => setPage('employee-add')} onPurchase={async (leagueId, leagueMember) => { const leagues = (employeeAlley.leagues || []).map(league => league.id === leagueId ? { ...league, members: [...(league.members || []), leagueMember] } : league); setEmployeeAlley(current => ({ ...current, leagues })); setPage('employee-add') }} />, 'new')
+  if (employeeAlley && page === 'employee-store') return employeePage(<MemberStorePage alley={employeeAlley} onDashboard={() => setPage('employee-reservations')} hideHeader />, 'store')
 
   if (page === 'find-alley') return memberPage(<FindAlleyPage alleys={availableAlleys} onBack={() => setPage('member-dashboard')} onSelect={selectAlley} member={member} onAccount={() => setPage('member-settings')} onLogout={logout} />, 'search')
   if (page === 'alley-details') return memberPage(<AlleyDetailsPage alley={selectedAlley} onBack={() => setPage('member-dashboard')} onJoin={() => hasActiveMembership() ? activateMembership() : setPage('member-checkout')} />, 'search')

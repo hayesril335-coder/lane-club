@@ -1,0 +1,29 @@
+.employee-access-settings .employee-code {
+  display: block;
+  width: fit-content;
+  margin: 14px 0;
+  border-radius: 4px;
+  background: #173f50;
+  color: #f2c447;
+  padding: 13px 17px;
+  font: 700 24px 'DM Mono', monospace;
+  letter-spacing: .14em;
+}
+
+.employee-code-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.owner-settings article .employee-code-actions button {
+  border: 1px solid #cad3ce;
+  border-radius: 3px;
+  padding: 9px 12px;
+}
+
+.employee-access-settings small {
+  display: block;
+  margin-top: 12px;
+  color: #287463;
+}

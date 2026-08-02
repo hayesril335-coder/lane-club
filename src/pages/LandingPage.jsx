@@ -12,6 +12,10 @@ export default function LandingPage({ onNavigate }) {
       onNavigate('owner-auth-login')
       return
     }
+    if (role === 'Employee login') {
+      onNavigate('employee-login')
+      return
+    }
     if (role === 'Member login') {
       onNavigate('member-auth-login')
       return
@@ -74,7 +78,7 @@ export default function LandingPage({ onNavigate }) {
           <p>Offer members a seamless reservation experience and grow dependable monthly revenue.</p>
           <div className="alley-login-actions">
             <button onClick={() => showNextStep('Owner login')}>Owner Login</button>
-            <button disabled title="Employee accounts are coming soon">Employee Login</button>
+            <button onClick={() => showNextStep('Employee login')}>Employee Login</button>
           </div>
           <button className="light-button" onClick={() => showNextStep('Bowling alley owner')}>Partner with Lane Club <Arrow /></button>
         </div>

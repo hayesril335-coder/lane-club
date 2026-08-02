@@ -23,3 +23,10 @@ export async function loadAlleys() {
   const snapshot = await getDocs(collection(firestore, 'alleys'))
   return snapshot.docs.map(item => ({ id: item.id, ...item.data() }))
 }
+
+export async function findAlleyByEmployeeCode(code) {
+  const normalizedCode = String(code || '').replace(/\D/g, '')
+  if (normalizedCode.length !== 10) return null
+  const alleys = await loadAlleys()
+  return alleys.find(alley => String(alley.employeeCode || '') === normalizedCode) || null
+}

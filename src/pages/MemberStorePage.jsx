@@ -2,15 +2,15 @@ import { useState } from 'react'
 import { productsForAlley } from '../utils/products'
 import './StorePage.css'
 
-export default function MemberStorePage({ alley, onDashboard, onEditStore }) {
+export default function MemberStorePage({ alley, onDashboard, onEditStore, hideHeader = false }) {
   const [notice, setNotice] = useState('')
   const products = productsForAlley(alley)
   return <main className="store-page member-store-page">
-    <header>
+    {!hideHeader && <header>
       <button onClick={onDashboard}>← Dashboard</button>
       <strong>LANE CLUB</strong>
       {onEditStore ? <button className="edit-store-button" onClick={onEditStore}>Edit Store</button> : <span>Alley store</span>}
-    </header>
+    </header>}
     <section className="store-shell">
       <div className="store-alley-banner"><div className="store-alley-mark">{alley.name.split(' ').map(word => word[0]).join('').slice(0, 2)}</div><div><p>SHOPPING AT</p><h1>{alley.name}</h1><span>{alley.area} · Products offered directly by your bowling alley</span></div></div>
       <div className="store-heading"><div><p>ALLEY PRODUCTS</p><h2>Everything for your <em>next game.</em></h2></div><span>{products.length} products</span></div>
