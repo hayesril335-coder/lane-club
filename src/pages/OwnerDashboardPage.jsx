@@ -29,6 +29,6 @@ export default function OwnerDashboardPage({ alley, reservations = [], now = new
       <article><p>LANE UTILIZATION</p><strong>{utilization}%</strong><small>{displayedHours} of {availableHours.toLocaleString()} available lane hours</small></article>
       <article><p>MEMBER HOURS USED</p><strong>{Number(memberHours.toFixed(1))} hrs</strong><small>Membership reservation hours this month</small></article>
     </div>
-    <section className="league-metrics"><div><p>LEAGUE MEMBERS</p><h2>Membership by league</h2></div>{leagues.length ? <div className="league-metric-grid">{leagues.map(league => <article key={league.id}><strong>{(league.members || []).filter(member => member.status !== 'cancelled').length}</strong><span>{league.name}</span><small>${Number(league.monthlyPrice || 0).toFixed(2)}/month</small></article>)}</div> : <p className="no-league-metrics">Create a league in Settings to start tracking league members.</p>}</section>
+    <section className="league-metrics"><div><p>LEAGUE MEMBERS</p><h2>Memberships by league</h2></div>{leagues.length ? <div className="league-metric-grid">{leagues.map(league => <article key={league.id}><strong>{(league.members || []).filter(member => member.status !== 'cancelled').length}</strong><span>{league.name}</span><small>${Number(league.monthlyPrice || 0).toFixed(2)}/month</small></article>)}</div> : <p className="no-league-metrics">Create a league in Settings to start tracking league members.</p>}</section>
   </section></main>
 }
