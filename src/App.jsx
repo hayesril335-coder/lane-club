@@ -11,6 +11,7 @@ import ReservationManagementPage from './pages/ReservationManagementPage'
 import OwnerWalkInReservationPage from './pages/OwnerWalkInReservationPage'
 import OwnerSettingsPage from './pages/OwnerSettingsPage'
 import OwnerStorePage from './pages/OwnerStorePage'
+import OwnerStorefrontPage from './pages/OwnerStorefrontPage'
 import LeagueSetupPage from './pages/LeagueSetupPage'
 import LeagueSignupPage from './pages/LeagueSignupPage'
 import FindAlleyPage, { defaultAlleys } from './pages/FindAlleyPage'
@@ -218,7 +219,8 @@ export default function App() {
   if (page === 'owner-walk-in-reservation') return ownerPage(<OwnerWalkInReservationPage alley={ownerAlley} onBack={() => setPage('reservation-management')} onLeagueSignup={() => setPage('league-signup')} onComplete={async reservation => { await addOwnerReservation(reservation); setPage('reservation-management') }} />, 'new')
   if (page === 'league-signup') return ownerPage(<LeagueSignupPage alley={ownerAlley} onBack={() => setPage('owner-walk-in-reservation')} onPurchase={addLeagueMember} />, 'new')
   if (page === 'league-setup') return ownerPage(<LeagueSetupPage alley={ownerAlley} onBack={() => setPage('owner-settings')} onSaveLeague={addLeague} />, 'settings')
-  if (page === 'owner-store') return ownerPage(<OwnerStorePage alley={ownerAlley} onAddProduct={addOwnerProduct} onDeleteProduct={deleteOwnerProduct} onAddCategory={addOwnerCategory} />, 'store')
+  if (page === 'owner-store') return ownerPage(<OwnerStorefrontPage alley={ownerAlley} onDashboard={() => setPage('owner-dashboard')} onEditStore={() => setPage('owner-store-edit')} />, 'store')
+  if (page === 'owner-store-edit') return ownerPage(<OwnerStorePage alley={ownerAlley} onAddProduct={addOwnerProduct} onDeleteProduct={deleteOwnerProduct} onAddCategory={addOwnerCategory} />, 'store')
   if (page === 'owner-settings') return ownerPage(<OwnerSettingsPage alley={ownerAlley} email={member.email || user?.email || ''} onLanes={() => setPage('lane-management')} onLeagueSetup={() => setPage('league-setup')} onSave={saveOwnerAlleyUpdates} onUpdateCredentials={updateOwnerCredentials} onCancelService={cancelOwnerService} onLogout={logout} />, 'settings')
 
   if (page === 'find-alley') return memberPage(<FindAlleyPage alleys={availableAlleys} onBack={() => setPage('member-dashboard')} onSelect={selectAlley} member={member} onAccount={() => setPage('member-settings')} onLogout={logout} />, 'search')
