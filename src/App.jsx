@@ -11,6 +11,8 @@ import ReservationManagementPage from './pages/ReservationManagementPage'
 import OwnerWalkInReservationPage from './pages/OwnerWalkInReservationPage'
 import OwnerSettingsPage from './pages/OwnerSettingsPage'
 import OwnerStorePage from './pages/OwnerStorePage'
+import LeagueSetupPage from './pages/LeagueSetupPage'
+import LeagueSignupPage from './pages/LeagueSignupPage'
 import FindAlleyPage, { defaultAlleys } from './pages/FindAlleyPage'
 import AlleyDetailsPage from './pages/AlleyDetailsPage'
 import MemberCheckoutPage from './pages/MemberCheckoutPage'
@@ -23,6 +25,7 @@ import MemberSettingsPage from './pages/MemberSettingsPage'
 import MemberBottomNav from './components/MemberBottomNav'
 import OwnerBottomNav from './components/OwnerBottomNav'
 import { hasActiveMembership } from './utils/demoMode'
+import { isReservationActive } from './utils/reservations'
 import { completeGoogleRedirect, observeAuthState, signInWithGoogleCredential, signOut } from './services/authService'
 import { loadAccount, loadAlley, loadAlleys, saveAccount, saveAlley } from './services/accountService'
 
@@ -107,6 +110,15 @@ export default function App() {
       return reservations.length === current.reservations.length && usedHours === current.usedHours ? current : { ...current, reservations, usedHours }
     })
   }, [now])
+  useEffect(() => {
+    if (!ownerReservations.length) return
+    const activeReservations = ownerReservations.filter(reservation => isReservationActive(reservation, now))
+    if (activeReservations.length === ownerReservations.length) return
+    setOwnerReservations(activeReservations)
+    const nextAlley = { ...(ownerAlley || {}), reservations: activeReservations }
+    setOwnerAlley(nextAlley)
+    if (user) saveAlley(user.uid, nextAlley).catch(console.error)
+  }, [now, ownerReservations, ownerAlley, user])
 
   const continueAsMember = async ({ user: authUser, fullName, email } = {}) => {
     setUser(authUser)
@@ -160,6 +172,16 @@ export default function App() {
     setOwnerAlley(nextAlley)
     if (user) await saveAlley(user.uid, nextAlley)
   }
+  const saveOwnerAlleyUpdates = async updates => {
+    const nextAlley = { ...(ownerAlley || {}), ...updates }
+    setOwnerAlley(nextAlley)
+    if (user) await saveAlley(user.uid, nextAlley)
+  }
+  const addLeague = async league => saveOwnerAlleyUpdates({ leagues: [...(ownerAlley?.leagues || []), league] })
+  const addLeagueMember = async (leagueId, leagueMember) => {
+    const leagues = (ownerAlley?.leagues || []).map(league => league.id === leagueId ? { ...league, members: [...(league.members || []), leagueMember] } : league)
+    await saveOwnerAlleyUpdates({ leagues })
+  }
 
   const memberNav = active => <MemberBottomNav active={active} onSearch={() => setPage('find-alley')} onReservations={() => setPage('member-reservations')} onPurchase={() => setPage('member-store')} />
   const memberPage = (content, active) => <div className="with-bottom-nav">{content}{memberNav(active)}</div>
@@ -174,10 +196,12 @@ export default function App() {
 
   if (page === 'owner-dashboard') return ownerPage(<OwnerDashboardPage alley={ownerAlley} reservations={ownerReservations} now={now} />, 'overview')
   if (page === 'lane-management') return ownerPage(<LaneManagementPage onBack={() => setPage('owner-dashboard')} />, 'settings')
-  if (page === 'reservation-management') return ownerPage(<ReservationManagementPage bookings={ownerReservations} alley={ownerAlley} />, 'reservations')
-  if (page === 'owner-walk-in-reservation') return ownerPage(<OwnerWalkInReservationPage alley={ownerAlley} onBack={() => setPage('reservation-management')} onComplete={async reservation => { await addOwnerReservation(reservation); setPage('reservation-management') }} />, 'new')
+  if (page === 'reservation-management') return ownerPage(<ReservationManagementPage bookings={ownerReservations} alley={ownerAlley} now={now} />, 'reservations')
+  if (page === 'owner-walk-in-reservation') return ownerPage(<OwnerWalkInReservationPage alley={ownerAlley} onBack={() => setPage('reservation-management')} onLeagueSignup={() => setPage('league-signup')} onComplete={async reservation => { await addOwnerReservation(reservation); setPage('reservation-management') }} />, 'new')
+  if (page === 'league-signup') return ownerPage(<LeagueSignupPage alley={ownerAlley} onBack={() => setPage('owner-walk-in-reservation')} onPurchase={addLeagueMember} />, 'new')
+  if (page === 'league-setup') return ownerPage(<LeagueSetupPage alley={ownerAlley} onBack={() => setPage('owner-settings')} onSaveLeague={addLeague} />, 'settings')
   if (page === 'owner-store') return ownerPage(<OwnerStorePage alley={ownerAlley} onAddProduct={addOwnerProduct} onAddCategory={addOwnerCategory} />, 'store')
-  if (page === 'owner-settings') return ownerPage(<OwnerSettingsPage onBack={() => setPage('owner-dashboard')} onLanes={() => setPage('lane-management')} />, 'settings')
+  if (page === 'owner-settings') return ownerPage(<OwnerSettingsPage alley={ownerAlley} onBack={() => setPage('owner-dashboard')} onLanes={() => setPage('lane-management')} onLeagueSetup={() => setPage('league-setup')} onSave={saveOwnerAlleyUpdates} />, 'settings')
 
   if (page === 'find-alley') return memberPage(<FindAlleyPage alleys={availableAlleys} onBack={() => setPage('member-dashboard')} onSelect={selectAlley} member={member} onAccount={() => setPage('member-settings')} onLogout={logout} />, 'search')
   if (page === 'alley-details') return memberPage(<AlleyDetailsPage alley={selectedAlley} onBack={() => setPage('member-dashboard')} onJoin={() => hasActiveMembership() ? activateMembership() : setPage('member-checkout')} />, 'search')

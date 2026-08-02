@@ -1,4 +1,5 @@
 import './OwnerDashboardPage.css'
+import './OwnerLeagueMetrics.css'
 
 const durationHours = reservation => Number.parseFloat(reservation.durationHours ?? reservation.hours ?? reservation.duration ?? 0) || 0
 
@@ -18,6 +19,7 @@ export default function OwnerDashboardPage({ alley, reservations = [], now = new
   const displayedHours = Number(usedHours.toFixed(1))
   const resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1)
   const daysUntilReset = Math.max(1, Math.ceil((resetDate - now) / 86400000))
+  const leagues = alley?.leagues || []
 
   return <main className="dashboard-page"><section className="dash-content">
     <header className="dash-header"><div><p>OWNER OVERVIEW</p><h1>{alley?.name || 'Your bowling alley'} <em>at a glance.</em></h1><span className="metric-reset">Live totals for this month · reset in {daysUntilReset} day{daysUntilReset === 1 ? '' : 's'}</span></div></header>
@@ -27,5 +29,6 @@ export default function OwnerDashboardPage({ alley, reservations = [], now = new
       <article><p>LANE UTILIZATION</p><strong>{utilization}%</strong><small>{displayedHours} of {availableHours.toLocaleString()} available lane hours</small></article>
       <article><p>MEMBER HOURS USED</p><strong>{Number(memberHours.toFixed(1))} hrs</strong><small>Membership reservation hours this month</small></article>
     </div>
+    <section className="league-metrics"><div><p>LEAGUE MEMBERS</p><h2>Membership by league</h2></div>{leagues.length ? <div className="league-metric-grid">{leagues.map(league => <article key={league.id}><strong>{(league.members || []).filter(member => member.status !== 'cancelled').length}</strong><span>{league.name}</span><small>${Number(league.monthlyPrice || 0).toFixed(2)}/month</small></article>)}</div> : <p className="no-league-metrics">Create a league in Settings to start tracking league members.</p>}</section>
   </section></main>
 }
