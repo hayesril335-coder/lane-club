@@ -34,7 +34,7 @@ export default function GoogleAuthButton({ disabled = false, onCredential, onErr
         callback: response => onCredential(response.credential),
         auto_select: false,
         cancel_on_tap_outside: true,
-        use_fedcm_for_prompt: true,
+        use_fedcm_for_button: true,
         itp_support: true,
       })
       container.current.replaceChildren()
