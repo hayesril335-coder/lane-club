@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import './StorePage.css'
 import './OwnerStorePage.css'
+import './OwnerStoreProductList.css'
 
-export default function OwnerStorePage({ alley, onAddProduct, onAddCategory }) {
+export default function OwnerStorePage({ alley, onAddProduct, onDeleteProduct, onAddCategory }) {
   const [preview, setPreview] = useState('')
   const [message, setMessage] = useState('')
   const products = alley?.products || []
@@ -41,7 +42,7 @@ export default function OwnerStorePage({ alley, onAddProduct, onAddCategory }) {
     <div className="store-heading"><div><p>OWNER STORE</p><h1>Sell products to <em>your bowlers.</em></h1><span>Create categories, then publish products for your customers.</span></div><b>{products.length} live</b></div>
     <form className="category-form" onSubmit={submitCategory}><label>Create a product category<input name="categoryName" required placeholder="Food & drinks" /></label><button>Create category</button>{categories.length > 0 && <div>{categories.map(category => <span key={category}>{category}</span>)}</div>}</form>
     <div className="owner-store-grid"><form className="product-form" onSubmit={submit}><h2>Post a product</h2><label>Picture<input type="file" accept="image/*" onChange={chooseImage} /></label>{preview && <img className="product-preview" src={preview} alt="Product preview" />}<label>Title<input name="title" required placeholder="League night package" /></label><label>Price<input name="price" type="number" min="0" step="0.01" required placeholder="24.99" /></label><label>Category<select name="category" required defaultValue=""><option value="" disabled>{categories.length ? 'Select a category' : 'Create a category first'}</option>{categories.map(category => <option key={category}>{category}</option>)}</select></label><label>Description<textarea name="description" required rows="4" placeholder="Tell bowlers what is included." /></label><button disabled={!categories.length}>Publish product →</button>{message && <p>{message}</p>}</form>
-      <section className="owner-product-list"><h2>Published products</h2>{products.length ? products.map(product => <article key={product.id}><div className="product-thumb">{product.image ? <img src={product.image} alt="" /> : '●'}</div><div><strong>{product.title}</strong><small>{product.category || 'Uncategorized'}</small><span>{product.description}</span></div><b>${Number(product.price).toFixed(2)}</b></article>) : <div className="empty-products"><span>◈</span><p>Your first published product will appear here.</p></div>}</section>
+      <section className="owner-product-list"><h2>Published products</h2>{products.length ? products.map(product => <article key={product.id}><div className="product-thumb">{product.image ? <img src={product.image} alt={`${product.title} product`} /> : '●'}</div><div className="product-copy"><strong>{product.title}</strong><small>{product.category || 'Uncategorized'}</small><span>{product.description}</span></div><b>${Number(product.price).toFixed(2)}</b><button className="delete-product" onClick={() => onDeleteProduct(product.id)} aria-label={`Delete ${product.title}`}>Delete</button></article>) : <div className="empty-products"><span>◈</span><p>Your first published product will appear here.</p></div>}</section>
     </div>
   </section></main>
 }
