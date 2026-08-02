@@ -7,6 +7,10 @@ export default function LandingPage({ onNavigate }) {
   const [notice, setNotice] = useState('')
 
   const showNextStep = (role) => {
+    if (role === 'Member login') {
+      onNavigate('member-auth-login')
+      return
+    }
     if (role === 'Member') {
       onNavigate('member-auth')
       return
@@ -25,7 +29,6 @@ export default function LandingPage({ onNavigate }) {
         <div className="nav-links">
           <a href="#how-it-works">How it works</a>
           <a href="#for-alleys">For alleys</a>
-          <button className="text-button" onClick={() => showNextStep('Member')}>Log in</button>
         </div>
       </nav>
 
@@ -35,8 +38,8 @@ export default function LandingPage({ onNavigate }) {
           <h1>Make every week a <em>bowling</em> week.</h1>
           <p className="hero-text">Join a local alley, reserve the lane you want, and bowl up to four hours every week—all with one simple membership.</p>
           <div className="hero-actions">
-            <button className="primary-button" onClick={() => showNextStep('Member')}>Find your alley <Arrow /></button>
-            <button className="secondary-button" onClick={() => showNextStep('Bowling alley owner')}>I own an alley <Arrow /></button>
+            <button className="primary-button" onClick={() => showNextStep('Member')}>Create An Account <Arrow /></button>
+            <button className="secondary-button" onClick={() => showNextStep('Member login')}>Login <Arrow /></button>
           </div>
           {notice && <p className="notice" role="status">{notice}</p>}
           <div className="member-note"><span>4</span><p><strong>Hours per week</strong><br />Use them any way you want.</p></div>

@@ -89,7 +89,7 @@ export default function App() {
           if (pendingGoogleRole) {
             localStorage.removeItem('lane-club-google-role')
             setPage(pendingGoogleRole === 'owner' ? (alley && alley.serviceStatus !== 'cancelled' ? 'owner-dashboard' : 'owner-checkout') : 'member-dashboard')
-          } else if (page === 'home' || page === 'member-auth' || page === 'owner-auth') {
+          } else if (page === 'home' || page === 'member-auth' || page === 'member-auth-login' || page === 'owner-auth') {
             setPage(account?.role === 'owner' ? (alley && alley.serviceStatus !== 'cancelled' ? 'owner-dashboard' : 'owner-checkout') : 'member-dashboard')
           }
         }
@@ -206,6 +206,7 @@ export default function App() {
 
   if (!authReady) return <main className="setup-page"><p className="notice">Loading Lane Club…</p></main>
   if (page === 'member-auth') return <MemberAuthPage onBack={() => setPage('home')} onOwner={() => setPage('owner-auth')} onContinue={continueAsMember} />
+  if (page === 'member-auth-login') return <MemberAuthPage initialMode="login" onBack={() => setPage('home')} onOwner={() => setPage('owner-auth')} onContinue={continueAsMember} />
   if (page === 'owner-auth') return <OwnerAuthPage onBack={() => setPage('home')} onContinue={async ({ user: authUser, alleyName }) => { setUser(authUser); const existingAlley = await loadAlley(authUser.uid); await saveAccount(authUser.uid, { name: authUser.displayName || 'Alley Owner', email: authUser.email, role: 'owner' }); setOwnerAlley(existingAlley || { name: alleyName }); setPage(existingAlley && existingAlley.serviceStatus !== 'cancelled' ? 'owner-dashboard' : 'owner-checkout') }} />
   if (page === 'owner-checkout') return <OwnerCheckoutPage onBack={() => setPage('owner-auth')} onContinue={async () => { if (ownerAlley?.name) { await saveOwnerAlleyUpdates({ serviceStatus: 'active', cancelledAt: null }); setPage('owner-dashboard') } else setPage('alley-setup') }} />
   if (page === 'alley-setup') return <AlleySetupPage initialAlley={ownerAlley} onBack={() => setPage('owner-checkout')} onComplete={async alley => { setOwnerAlley(alley); if (user) await saveAlley(user.uid, alley); setPage('owner-dashboard') }} />
