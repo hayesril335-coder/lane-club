@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import EmployeeAccessSettings from '../components/EmployeeAccessSettings'
 import { prepareBannerImage } from '../utils/images'
+import { businessDays, normalizeBusinessHours } from '../utils/businessHours'
 import './OwnerSettingsPage.css'
 import './OwnerSettingsActions.css'
 import './OwnerBannerSettings.css'
 import './OwnerSettingsBack.css'
+import './OwnerBusinessHours.css'
 
 const lastFour = value => String(value || '').replace(/\D/g, '').slice(-4)
 
@@ -12,6 +14,7 @@ export default function OwnerSettingsPage({ alley, email, onBack, onEditStore, o
   const [name, setName] = useState(alley?.name || '')
   const [address, setAddress] = useState(alley?.address || '')
   const [bannerImage, setBannerImage] = useState(alley?.bannerImage || '')
+  const [businessHours, setBusinessHours] = useState(() => normalizeBusinessHours(alley))
   const [message, setMessage] = useState('')
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -21,6 +24,7 @@ export default function OwnerSettingsPage({ alley, email, onBack, onEditStore, o
   const saveBank = event => { event.preventDefault(); const form = new FormData(event.currentTarget); return run(() => save({ payoutBank: { bankName: String(form.get('bankName')), accountHolder: String(form.get('accountHolder')), routingLast4: lastFour(form.get('routingNumber')), accountLast4: lastFour(form.get('accountNumber')) } }, 'Payout bank account saved.')) }
   const saveBilling = event => { event.preventDefault(); const form = new FormData(event.currentTarget); const cardNumber = String(form.get('cardNumber')); return run(() => save({ ownerBillingMethod: { cardholder: String(form.get('cardholder')), brand: cardNumber.startsWith('4') ? 'Visa' : 'Card', last4: lastFour(cardNumber), expiration: String(form.get('expiration')) } }, 'Lane Club subscription payment method saved.')) }
   const chooseBanner = event => run(async () => { const file = event.target.files?.[0]; if (!file) return; const image = await prepareBannerImage(file); setBannerImage(image); setMessage('Banner picture is ready to save.') })
+  const updateHours = (day, updates) => setBusinessHours(current => ({ ...current, [day]: { ...current[day], ...updates } }))
 
   return <main className="owner-settings"><section>
     <button className="owner-settings-back" type="button" onClick={onBack}>← Back to overview</button>
@@ -37,6 +41,19 @@ export default function OwnerSettingsPage({ alley, email, onBack, onEditStore, o
       <h2>Change address</h2><p>This address is used when customers tap Get directions.</p>
       <label>Full bowling alley address<input value={address} onChange={event => setAddress(event.target.value)} required placeholder="123 Main Street, Los Angeles, CA 90001" /></label>
       <button disabled={busy}>Save address</button>
+    </form>
+
+    <form className="business-hours-form" onSubmit={event => { event.preventDefault(); run(() => save({ businessHours }, 'Business hours saved.')) }}>
+      <h2>Business hours</h2><p>Set when your bowling alley is open. Customers will see these hours when browsing your alley.</p>
+      <div className="business-hours-grid">
+        {businessDays.map(([day, label]) => <div className="business-hours-row" key={day}>
+          <strong className="business-hours-day">{label}</strong>
+          <label>Opens<input type="time" value={businessHours[day].open} onChange={event => updateHours(day, { open: event.target.value })} disabled={businessHours[day].closed} required={!businessHours[day].closed} /></label>
+          <label>Closes<input type="time" value={businessHours[day].close} onChange={event => updateHours(day, { close: event.target.value })} disabled={businessHours[day].closed} required={!businessHours[day].closed} /></label>
+          <label className="business-hours-closed"><input type="checkbox" checked={businessHours[day].closed} onChange={event => updateHours(day, { closed: event.target.checked })} />Closed</label>
+        </div>)}
+      </div>
+      <button disabled={busy}>Save business hours</button>
     </form>
 
     <article><h2>Store</h2><p>Edit product categories, pictures, prices, titles, and descriptions.</p><button onClick={onEditStore}>Edit store →</button></article>
