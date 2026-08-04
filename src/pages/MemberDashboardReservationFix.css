@@ -1,0 +1,20 @@
+.next-reservation > .next-info {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.next-reservation > .next-info h3 {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+@media (max-width: 800px) {
+  .next-reservation > .next-info {
+    padding: 8px 0;
+  }
+
+  .next-reservation > .next-info h3 {
+    font-size: 21px;
+    line-height: 1.25;
+  }
+}

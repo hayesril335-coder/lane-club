@@ -230,6 +230,7 @@ export default function App() {
     }
   }
   const addReservation = async reservation => {
+    if (!hasMembershipAt(member, selectedAlley)) throw new Error(`An active ${selectedAlley.name} membership is required to reserve a lane.`)
     const savedReservation = { ...reservation, id: crypto.randomUUID(), alleyId: selectedAlley.id, alleyName: selectedAlley.name, createdAt: new Date().toISOString() }
     setMember(current => ({ ...current, reservations: [...current.reservations, savedReservation], usedHours: current.usedHours + reservation.duration }))
     setPage('reservation-confirmation')
@@ -250,6 +251,11 @@ export default function App() {
   const changeActiveAlley = alley => {
     setSelectedAlley(alley)
     setMember(current => ({ ...current, selectedAlleyId: alley.id }))
+  }
+  const startMemberReservation = () => setPage(hasMembershipAt(member, selectedAlley) ? 'make-reservation' : 'alley-details')
+  const openMemberDashboard = () => {
+    if (!hasMembershipAt(member, selectedAlley) && membershipAlleys.length) setSelectedAlley(membershipAlleys[0])
+    setPage('member-dashboard')
   }
   const addOwnerProduct = async product => {
     const nextAlley = { ...(ownerAlley || { name: 'Your bowling alley' }), products: [...(ownerAlley?.products || []), product] }
@@ -363,7 +369,7 @@ export default function App() {
     await logout()
   }
 
-  const memberNav = active => <MemberBottomNav active={active} onSearch={() => setPage('find-alley')} onDashboard={() => setPage('member-dashboard')} onPurchase={() => setPage('member-store')} />
+  const memberNav = active => <MemberBottomNav active={active} onSearch={() => setPage('find-alley')} onDashboard={openMemberDashboard} onPurchase={() => setPage('member-store')} />
   const memberPage = (content, active) => <div className="with-bottom-nav">{content}{memberNav(active)}</div>
   const ownerNavProps = { onOverview: () => setPage('owner-dashboard'), onReservations: () => setPage('reservation-management'), onNewReservation: () => setPage('owner-walk-in-reservation'), onStore: () => setPage('owner-store'), onOrders: () => setPage('owner-orders') }
   const ownerPage = (content, active) => <div className="with-bottom-nav owner-account-page"><OwnerSettingsShortcut onClick={() => setPage('owner-settings')} />{content}<OwnerBottomNav {...ownerNavProps} active={active} /></div>
@@ -401,11 +407,12 @@ export default function App() {
   if (page === 'alley-details') return memberPage(<AlleyDetailsPage alley={selectedAlley} onBack={() => setPage('member-dashboard')} onJoin={() => hasActiveMembership() ? activateMembership() : setPage('member-checkout')} />, 'search')
   if (page === 'member-checkout') return memberPage(<MemberCheckoutPage alley={selectedAlley} onBack={() => setPage('alley-details')} onComplete={activateMembership} />, 'search')
   if (page === 'member-league-join') return memberPage(<MemberLeagueJoinPage alley={selectedAlley} league={selectedLeague} member={member} onBack={() => setPage('find-alley')} onValidate={code => validateLeaguePassword(selectedAlley.ownerId, selectedLeague.id, code)} onPurchase={joinSelectedLeague} />, 'search')
-  if (page === 'member-dashboard') return memberPage(<MemberDashboardPage alley={selectedAlley} membershipAlleys={membershipAlleys} now={now} onBack={() => setPage('find-alley')} onSelectAlley={changeActiveAlley} onReserve={() => setPage('make-reservation')} onReservations={() => setPage('member-reservations')} onAccount={() => setPage('member-settings')} member={activeMember} />, 'dashboard')
-  if (page === 'member-reservations') return memberPage(<MemberReservationsPage alley={selectedAlley} membershipAlleys={membershipAlleys} member={activeMember} onDashboard={() => setPage('member-dashboard')} onReserve={() => setPage('make-reservation')} onSelectAlley={changeActiveAlley} />, 'dashboard')
+  if (page === 'member-dashboard') return memberPage(<MemberDashboardPage alley={selectedAlley} membershipAlleys={membershipAlleys} now={now} onBack={() => setPage('find-alley')} onSelectAlley={changeActiveAlley} onReserve={startMemberReservation} onReservations={() => setPage('member-reservations')} onAccount={() => setPage('member-settings')} member={activeMember} />, 'dashboard')
+  if (page === 'member-reservations') return memberPage(<MemberReservationsPage alley={selectedAlley} membershipAlleys={membershipAlleys} member={activeMember} onDashboard={openMemberDashboard} onReserve={startMemberReservation} onSelectAlley={changeActiveAlley} />, 'dashboard')
   if (page === 'member-store') return memberPage(<MemberStorePage alley={selectedAlley} membershipAlleys={membershipAlleys} member={member} onDashboard={() => setPage('member-dashboard')} onSelectAlley={changeActiveAlley} onAccount={() => setPage('member-settings')} onLogout={logout} />, 'purchase')
+  if (page === 'make-reservation' && !hasMembershipAt(member, selectedAlley)) return memberPage(<AlleyDetailsPage alley={selectedAlley} onBack={openMemberDashboard} onJoin={() => setPage('member-checkout')} />, 'search')
   if (page === 'make-reservation') return memberPage(<MakeReservationPage alley={selectedAlley} onBack={() => setPage('member-reservations')} onConfirm={addReservation} member={activeMember} />, 'dashboard')
-  if (page === 'reservation-confirmation') return memberPage(<ReservationConfirmationPage alley={selectedAlley} onDashboard={() => setPage('member-dashboard')} onReserve={() => setPage('make-reservation')} member={activeMember} />, 'dashboard')
+  if (page === 'reservation-confirmation') return memberPage(<ReservationConfirmationPage alley={selectedAlley} onDashboard={openMemberDashboard} onReserve={startMemberReservation} member={activeMember} />, 'dashboard')
   if (page === 'member-settings') return memberPage(<MemberSettingsPage alley={selectedAlley} alleys={availableAlleys} onBack={() => setPage('member-dashboard')} onLogout={logout} member={member} onUpdatePassword={details => updateLoginCredentials(details)} onUpdate={updates => setMember(current => {
     if (updates.hasMembership === false) {
       const memberships = membershipAlleyIds(current).filter(id => String(id) !== String(selectedAlley.id))
