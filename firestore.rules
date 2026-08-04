@@ -7,6 +7,29 @@ service cloud.firestore {
     match /alleys/{ownerId} {
       allow read: if true;
       allow create, update, delete: if request.auth != null && request.auth.uid == ownerId;
+
+      match /leagueCodes/{code} {
+        allow create, delete, list: if request.auth != null && request.auth.uid == ownerId;
+        allow get: if request.auth != null;
+        allow update: if request.auth != null && (
+          request.auth.uid == ownerId || (
+            resource.data.used == false
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['used', 'usedBy', 'usedAt'])
+            && request.resource.data.used == true
+            && request.resource.data.usedBy == request.auth.uid
+          )
+        );
+      }
+
+      match /leagueMembers/{membershipId} {
+        allow read: if request.auth != null && (request.auth.uid == ownerId || resource.data.userId == request.auth.uid);
+        allow create: if request.auth != null
+          && request.resource.data.userId == request.auth.uid
+          && getAfter(/databases/$(database)/documents/alleys/$(ownerId)/leagueCodes/$(request.resource.data.code)).data.used == true
+          && getAfter(/databases/$(database)/documents/alleys/$(ownerId)/leagueCodes/$(request.resource.data.code)).data.usedBy == request.auth.uid
+          && getAfter(/databases/$(database)/documents/alleys/$(ownerId)/leagueCodes/$(request.resource.data.code)).data.leagueId == request.resource.data.leagueId;
+        allow update, delete: if request.auth != null && request.auth.uid == ownerId;
+      }
     }
   }
 }

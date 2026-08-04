@@ -33,6 +33,8 @@ import { hasActiveMembership } from './utils/demoMode'
 import { hasMembershipAt, memberForAlley, membershipAlleyIds } from './utils/memberships'
 import { completeGoogleRedirect, observeAuthState, signInWithGoogleCredential, signOut, updateLoginCredentials } from './services/authService'
 import { findAlleyByEmployeeCode, loadAccount, loadAlley, loadAlleys, saveAccount, saveAlley } from './services/accountService'
+import { endAllSavedLeagueMemberships, endSavedLeagueMembership, generateLeaguePasswords, invalidateLeaguePasswords, joinLeagueWithPassword, loadLeagueMembers, validateLeaguePassword } from './services/leagueService'
+import MemberLeagueJoinPage from './pages/MemberLeagueJoinPage'
 
 const newMember = { name: 'New Member', email: '', phone: '', hasMembership: false, membershipAlleyIds: [], usedHours: 0, reservations: [] }
 
@@ -85,6 +87,10 @@ const withPendingEmployeeData = alley => {
 }
 const loadOwnerAlleyWithPendingOrders = async ownerId => {
   let alley = await loadAlley(ownerId)
+  const savedLeagueMembers = await loadLeagueMembers(ownerId).catch(() => [])
+  if (alley && savedLeagueMembers.length) {
+    alley = { ...alley, leagues: (alley.leagues || []).map(league => ({ ...league, members: uniqueReservations([...(league.members || []), ...savedLeagueMembers.filter(member => member.leagueId === league.id)]) })) }
+  }
   const queuedOrders = pendingEmployeeOrders(ownerId)
   const queuedReservations = pendingEmployeeReservations(ownerId)
   if (alley && (queuedOrders.length || queuedReservations.length)) {
@@ -113,6 +119,7 @@ export default function App() {
   const [employeeAlley, setEmployeeAlley] = useState(null)
   const [selectedLeagueId, setSelectedLeagueId] = useState(null)
   const [leagueEntryPoint, setLeagueEntryPoint] = useState('settings')
+  const [selectedLeague, setSelectedLeague] = useState(null)
   const activeMember = memberForAlley(member, selectedAlley)
   const membershipAlleys = availableAlleys.filter(alley => hasMembershipAt(member, alley))
 
@@ -307,6 +314,7 @@ export default function App() {
       status: 'deleted',
       members: (league.members || []).map(leagueMember => ({ ...leagueMember, status: 'cancelled', active: false, endedAt: leagueMember.endedAt || deletedAt })),
     } : null
+    if (user) await Promise.all([endAllSavedLeagueMemberships(user.uid, leagueId), invalidateLeaguePasswords(user.uid, leagueId)])
     await saveOwnerAlleyUpdates({
       leagues: (ownerAlley?.leagues || []).filter(item => item.id !== leagueId),
       deletedLeagues: archivedLeague ? [...(ownerAlley?.deletedLeagues || []), archivedLeague] : (ownerAlley?.deletedLeagues || []),
@@ -318,11 +326,23 @@ export default function App() {
     await saveOwnerAlleyUpdates({ leagues })
   }
   const endLeagueMembership = async (leagueId, memberId) => {
+    const savedMember = (ownerAlley?.leagues || []).find(league => league.id === leagueId)?.members?.find(leagueMember => leagueMember.id === memberId)
+    if (user && savedMember?.membershipDocId) await endSavedLeagueMembership(user.uid, savedMember.membershipDocId)
     const leagues = (ownerAlley?.leagues || []).map(league => league.id === leagueId ? {
       ...league,
       members: (league.members || []).map(leagueMember => leagueMember.id === memberId ? { ...leagueMember, status: 'cancelled', active: false, endedAt: new Date().toISOString() } : leagueMember),
     } : league)
     await saveOwnerAlleyUpdates({ leagues })
+  }
+  const createLeaguePasswords = async (leagueId, count) => {
+    if (!user) throw new Error('Log in to the owner account to generate league passwords.')
+    return generateLeaguePasswords(user.uid, leagueId, count)
+  }
+  const joinSelectedLeague = async code => {
+    if (!user || !selectedLeague || !selectedAlley.ownerId) throw new Error('This league is not connected to an active alley owner.')
+    const membership = await joinLeagueWithPassword({ ownerId: selectedAlley.ownerId, league: selectedLeague, code, user, member })
+    setMember(current => ({ ...current, leagueMemberships: [...(current.leagueMemberships || []).filter(item => item.id !== membership.id), membership] }))
+    return membership
   }
   const saveEmployeeAccess = async updates => {
     if (!user) throw new Error('Log in to the owner account before changing the employee code.')
@@ -364,7 +384,7 @@ export default function App() {
   if (page === 'reservation-management') return ownerPage(<ReservationManagementPage bookings={ownerReservations} alley={ownerAlley} now={now} />, 'reservations')
   if (page === 'owner-walk-in-reservation') return ownerPage(<OwnerWalkInReservationPage alley={ownerAlley} onBack={() => setPage('reservation-management')} onLeagueSignup={() => setPage('league-signup')} onComplete={async reservation => { await addOwnerReservation(reservation); setPage('reservation-management') }} />, 'new')
   if (page === 'league-signup') return ownerPage(<LeagueSignupPage alley={ownerAlley} onBack={() => setPage('owner-walk-in-reservation')} onPurchase={addLeagueMember} />, 'new')
-  if (page === 'league-setup') return ownerPage(<LeagueSetupPage alley={ownerAlley} initialLeagueId={selectedLeagueId} managementOnly={leagueEntryPoint === 'overview'} onBack={() => { setSelectedLeagueId(null); setPage(leagueEntryPoint === 'overview' ? 'owner-dashboard' : 'owner-settings') }} onSaveLeague={addLeague} onUpdateLeague={updateLeague} onDeleteLeague={deleteLeague} onEndMembership={endLeagueMembership} />, 'settings')
+  if (page === 'league-setup') return ownerPage(<LeagueSetupPage alley={ownerAlley} initialLeagueId={selectedLeagueId} managementOnly={leagueEntryPoint === 'overview'} onBack={() => { setSelectedLeagueId(null); setPage(leagueEntryPoint === 'overview' ? 'owner-dashboard' : 'owner-settings') }} onSaveLeague={addLeague} onUpdateLeague={updateLeague} onDeleteLeague={deleteLeague} onEndMembership={endLeagueMembership} onGeneratePasswords={createLeaguePasswords} />, 'settings')
   if (page === 'owner-store') return ownerPage(<OwnerStorefrontPage alley={ownerAlley} onDashboard={() => setPage('owner-dashboard')} onPlaceOrder={addOwnerOrder} />, 'store')
   if (page === 'owner-store-edit') return ownerPage(<OwnerStorePage alley={ownerAlley} onAddProduct={addOwnerProduct} onDeleteProduct={deleteOwnerProduct} onAddCategory={addOwnerCategory} />, 'store')
   if (page === 'owner-orders') return ownerPage(<OrdersPage alley={ownerAlley} />, 'orders')
@@ -376,10 +396,11 @@ export default function App() {
   if (employeeAlley && page === 'employee-store') return employeePage(<MemberStorePage alley={employeeAlley} onDashboard={() => setPage('employee-reservations')} onPlaceOrder={addEmployeeOrder} staffRole="employee" hideHeader />, 'store')
   if (employeeAlley && page === 'employee-orders') return employeePage(<OrdersPage alley={employeeAlley} />, 'orders')
 
-  if (page === 'find-alley') return memberPage(<FindAlleyPage alleys={availableAlleys} onBack={() => setPage('member-dashboard')} onSelect={selectAlley} member={member} onAccount={() => setPage('member-settings')} onLogout={logout} />, 'search')
+  if (page === 'find-alley') return memberPage(<FindAlleyPage alleys={availableAlleys} onBack={() => setPage('member-dashboard')} onSelect={selectAlley} onJoinLeague={(alley, league) => { setSelectedAlley(alley); setSelectedLeague(league); setPage('member-league-join') }} member={member} onAccount={() => setPage('member-settings')} onLogout={logout} />, 'search')
   if (page === 'membership-alleys') return memberPage(<FindAlleyPage alleys={membershipAlleys} onBack={() => setPage('member-dashboard')} onSelect={selectAlley} member={member} onAccount={() => setPage('member-settings')} onLogout={logout} />, '')
   if (page === 'alley-details') return memberPage(<AlleyDetailsPage alley={selectedAlley} onBack={() => setPage('member-dashboard')} onJoin={() => hasActiveMembership() ? activateMembership() : setPage('member-checkout')} />, 'search')
   if (page === 'member-checkout') return memberPage(<MemberCheckoutPage alley={selectedAlley} onBack={() => setPage('alley-details')} onComplete={activateMembership} />, 'search')
+  if (page === 'member-league-join') return memberPage(<MemberLeagueJoinPage alley={selectedAlley} league={selectedLeague} member={member} onBack={() => setPage('find-alley')} onValidate={code => validateLeaguePassword(selectedAlley.ownerId, selectedLeague.id, code)} onPurchase={joinSelectedLeague} />, 'search')
   if (page === 'member-dashboard') return memberPage(<MemberDashboardPage alley={selectedAlley} membershipAlleys={membershipAlleys} now={now} onBack={() => setPage('find-alley')} onSelectAlley={changeActiveAlley} onReserve={() => setPage('make-reservation')} onReservations={() => setPage('member-reservations')} onAccount={() => setPage('member-settings')} member={activeMember} />, 'dashboard')
   if (page === 'member-reservations') return memberPage(<MemberReservationsPage alley={selectedAlley} membershipAlleys={membershipAlleys} member={activeMember} onDashboard={() => setPage('member-dashboard')} onReserve={() => setPage('make-reservation')} onSelectAlley={changeActiveAlley} />, 'dashboard')
   if (page === 'member-store') return memberPage(<MemberStorePage alley={selectedAlley} membershipAlleys={membershipAlleys} member={member} onDashboard={() => setPage('member-dashboard')} onSelectAlley={changeActiveAlley} onAccount={() => setPage('member-settings')} onLogout={logout} />, 'purchase')
