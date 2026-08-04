@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import './AlleyDetailsPage.css'
 import './AlleyBanner.css'
+import './AlleyDetailsLeagues.css'
 
-export default function AlleyDetailsPage({ alley, onBack, onJoin }) {
+export default function AlleyDetailsPage({ alley, onBack, onJoin, onJoinLeague }) {
   const [saved, setSaved] = useState(false)
   const mapsQuery = alley.address || `${alley.name}, ${alley.area}, Los Angeles, CA`
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`
@@ -25,7 +26,17 @@ export default function AlleyDetailsPage({ alley, onBack, onJoin }) {
           <hr />
           <section className="details-about"><h2>Make this your<br /><em>weekly lane.</em></h2><p>{alley.name} gives members the freedom to choose a lane, reserve ahead, and bowl on their own schedule.</p><div className="details-stats"><div><strong>{alley.lanes}</strong><span>bookable lanes</span></div><div><strong>11 AM – 11 PM</strong><span>weekday hours</span></div><div><strong>12 AM</strong><span>Friday & Saturday</span></div></div></section>
         </article>
-        <aside className="membership-box"><p>MONTHLY MEMBERSHIP</p><h2>Bowl more.<br /><em>Plan less.</em></h2><div className="membership-price"><strong>${alley.price}</strong><span>per month</span></div><ul><li>✓ Up to 4 reservation hours every week</li><li>✓ Split your hours any way you like</li><li>✓ Pick your preferred lane</li><li>✓ Reserve up to 7 days ahead</li></ul><button onClick={onJoin}>Start membership <span>→</span></button><small>Cancel anytime. No long-term commitment.</small></aside>
+        <div className="details-membership-column">
+          <aside className="membership-box"><p>MONTHLY MEMBERSHIP</p><h2>Bowl more.<br /><em>Plan less.</em></h2><div className="membership-price"><strong>${alley.price}</strong><span>per month</span></div><ul><li>✓ Up to 4 reservation hours every week</li><li>✓ Split your hours any way you like</li><li>✓ Pick your preferred lane</li><li>✓ Reserve up to 7 days ahead</li></ul><button onClick={onJoin}>Start membership <span>→</span></button><small>Cancel anytime. No long-term commitment.</small></aside>
+          {(alley.leagues || []).length > 0 && <section className="details-league-list">
+            <p>LEAGUES AT {alley.name.toUpperCase()}</p>
+            <h2>Join an alley league.</h2>
+            {alley.leagues.map(league => <article key={league.id}>
+              <div><strong>{league.name}</strong><span>${Number(league.monthlyPrice || 0).toFixed(2)}/month</span></div>
+              <button type="button" onClick={() => onJoinLeague?.(league)}>Join league</button>
+            </article>)}
+          </section>}
+        </div>
       </section>
     </div>
   </main>
