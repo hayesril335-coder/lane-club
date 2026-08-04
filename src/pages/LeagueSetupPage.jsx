@@ -10,7 +10,7 @@ const weekdays = [
   ['Thursday', 4], ['Friday', 5], ['Saturday', 6],
 ]
 
-export default function LeagueSetupPage({ alley, initialLeagueId, onBack, onSaveLeague, onDeleteLeague, onEndMembership }) {
+export default function LeagueSetupPage({ alley, initialLeagueId, managementOnly = false, onBack, onSaveLeague, onDeleteLeague, onEndMembership }) {
   const [selectedLanes, setSelectedLanes] = useState([])
   const [selectedDates, setSelectedDates] = useState([])
   const [nextDate, setNextDate] = useState('')
@@ -56,8 +56,8 @@ export default function LeagueSetupPage({ alley, initialLeagueId, onBack, onSave
     setSelectedLeagueId(null); setConfirmDelete(false); setMessage('League deleted.')
   }
 
-  return <main className="league-page"><header><button onClick={onBack}>← Back to settings</button><strong>LANE CLUB</strong><span>League setup</span></header><section>
-    <p>LEAGUE MANAGEMENT</p><h1>Build a <em>league.</em></h1><span>Create as many leagues as your alley needs and reserve multiple lanes and dates.</span>
+  return <main className="league-page"><header><button onClick={onBack}>← Back to {managementOnly ? 'overview' : 'settings'}</button><strong>LANE CLUB</strong><span>League setup</span></header><section>
+    {!managementOnly && <><p>LEAGUE MANAGEMENT</p><h1>Build a <em>league.</em></h1><span>Create as many leagues as your alley needs and reserve multiple lanes and dates.</span>
     <form onSubmit={submit}>
       <div className="league-fields"><label>League name<input name="name" required placeholder="Tuesday Night Strikers" /></label><label>Monthly price<input name="monthlyPrice" type="number" min="0" step="0.01" required placeholder="49.00" /></label></div>
       <fieldset><legend>Select as many lanes as needed</legend><div className="league-lanes">{Array.from({ length: Number(alley?.lanes) || 16 }, (_, index) => `Lane ${String(index + 1).padStart(2, '0')}`).map(lane => <label key={lane}><input type="checkbox" checked={selectedLanes.includes(lane)} onChange={() => toggleLane(lane)} /><span>{lane}</span></label>)}</div></fieldset>
@@ -65,7 +65,7 @@ export default function LeagueSetupPage({ alley, initialLeagueId, onBack, onSave
       <fieldset className="league-repeat"><legend>Repeat selected lanes on a schedule <small>optional</small></legend><p>Generate recurring dates while keeping the manual date system above. Per month repeats on the matching numbered weekday, such as the second Tuesday.</p><div className="repeat-days">{weekdays.map(([label, day]) => <label key={day}><input type="checkbox" checked={repeatDays.includes(day)} disabled={repeatFrequency === 'daily'} onChange={() => toggleRepeatDay(day)} /><span>{label.slice(0, 3)}</span></label>)}</div><div className="repeat-controls"><label>Start date<input type="date" min={localDate(today)} max={localDate(end)} value={repeatStart} onChange={event => setRepeatStart(event.target.value)} /></label><label>End date<input type="date" min={repeatStart || localDate(today)} max={localDate(end)} value={repeatEnd} onChange={event => setRepeatEnd(event.target.value)} /></label><label>Repeat<select value={repeatFrequency} onChange={event => setRepeatFrequency(event.target.value)}><option value="daily">Per day</option><option value="weekly">Per week</option><option value="biweekly">Every 2 weeks</option><option value="monthly">Per month</option></select></label></div><button className="repeat-add" type="button" onClick={addRepeatingDates}>Add repeating dates</button></fieldset>
       <div className="selected-dates">{selectedDates.map(date => <button type="button" key={date} onClick={() => setSelectedDates(current => current.filter(item => item !== date))}>{new Date(`${date}T12:00:00`).toLocaleDateString()} ×</button>)}</div>
       <button className="league-save">Save league →</button>{message && <p className="league-message">{message}</p>}
-    </form>
+    </form></>}
 
     <section className="league-list"><h2>Existing leagues</h2>{leagues.length ? leagues.map(league => <button className={league.id === selectedLeagueId ? 'selected' : ''} type="button" key={league.id} onClick={() => { setSelectedLeagueId(league.id); setConfirmDelete(false) }}><span><strong>{league.name}</strong><small>{(league.lanes || []).length} lanes · {(league.dates || []).length} dates · {activeLeagueMembers(league).length} active members</small></span><b>${Number(league.monthlyPrice).toFixed(2)}/month</b></button>) : <p>No leagues have been created yet.</p>}</section>
 
