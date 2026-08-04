@@ -299,8 +299,23 @@ export default function App() {
     await saveOwnerAlleyUpdates({ leagues })
   }
   const deleteLeague = async leagueId => {
-    await saveOwnerAlleyUpdates({ leagues: (ownerAlley?.leagues || []).filter(league => league.id !== leagueId) })
+    const deletedAt = new Date().toISOString()
+    const league = (ownerAlley?.leagues || []).find(item => item.id === leagueId)
+    const archivedLeague = league ? {
+      ...league,
+      deletedAt,
+      status: 'deleted',
+      members: (league.members || []).map(leagueMember => ({ ...leagueMember, status: 'cancelled', active: false, endedAt: leagueMember.endedAt || deletedAt })),
+    } : null
+    await saveOwnerAlleyUpdates({
+      leagues: (ownerAlley?.leagues || []).filter(item => item.id !== leagueId),
+      deletedLeagues: archivedLeague ? [...(ownerAlley?.deletedLeagues || []), archivedLeague] : (ownerAlley?.deletedLeagues || []),
+    })
     setSelectedLeagueId(null)
+  }
+  const updateLeague = async (leagueId, updates) => {
+    const leagues = (ownerAlley?.leagues || []).map(league => league.id === leagueId ? { ...league, ...updates, updatedAt: new Date().toISOString() } : league)
+    await saveOwnerAlleyUpdates({ leagues })
   }
   const endLeagueMembership = async (leagueId, memberId) => {
     const leagues = (ownerAlley?.leagues || []).map(league => league.id === leagueId ? {
@@ -349,7 +364,7 @@ export default function App() {
   if (page === 'reservation-management') return ownerPage(<ReservationManagementPage bookings={ownerReservations} alley={ownerAlley} now={now} />, 'reservations')
   if (page === 'owner-walk-in-reservation') return ownerPage(<OwnerWalkInReservationPage alley={ownerAlley} onBack={() => setPage('reservation-management')} onLeagueSignup={() => setPage('league-signup')} onComplete={async reservation => { await addOwnerReservation(reservation); setPage('reservation-management') }} />, 'new')
   if (page === 'league-signup') return ownerPage(<LeagueSignupPage alley={ownerAlley} onBack={() => setPage('owner-walk-in-reservation')} onPurchase={addLeagueMember} />, 'new')
-  if (page === 'league-setup') return ownerPage(<LeagueSetupPage alley={ownerAlley} initialLeagueId={selectedLeagueId} managementOnly={leagueEntryPoint === 'overview'} onBack={() => { setSelectedLeagueId(null); setPage(leagueEntryPoint === 'overview' ? 'owner-dashboard' : 'owner-settings') }} onSaveLeague={addLeague} onDeleteLeague={deleteLeague} onEndMembership={endLeagueMembership} />, 'settings')
+  if (page === 'league-setup') return ownerPage(<LeagueSetupPage alley={ownerAlley} initialLeagueId={selectedLeagueId} managementOnly={leagueEntryPoint === 'overview'} onBack={() => { setSelectedLeagueId(null); setPage(leagueEntryPoint === 'overview' ? 'owner-dashboard' : 'owner-settings') }} onSaveLeague={addLeague} onUpdateLeague={updateLeague} onDeleteLeague={deleteLeague} onEndMembership={endLeagueMembership} />, 'settings')
   if (page === 'owner-store') return ownerPage(<OwnerStorefrontPage alley={ownerAlley} onDashboard={() => setPage('owner-dashboard')} onPlaceOrder={addOwnerOrder} />, 'store')
   if (page === 'owner-store-edit') return ownerPage(<OwnerStorePage alley={ownerAlley} onAddProduct={addOwnerProduct} onDeleteProduct={deleteOwnerProduct} onAddCategory={addOwnerCategory} />, 'store')
   if (page === 'owner-orders') return ownerPage(<OrdersPage alley={ownerAlley} />, 'orders')
