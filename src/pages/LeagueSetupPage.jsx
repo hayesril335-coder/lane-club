@@ -3,6 +3,7 @@ import { localDate } from '../utils/reservations'
 import { activeLeagueMembers, generateRecurringLeagueDates } from '../utils/leagues'
 import './LeaguePages.css'
 import './LeagueManagementExtras.css'
+import './LeagueRepeatStates.css'
 
 const weekdays = [
   ['Sunday', 0], ['Monday', 1], ['Tuesday', 2], ['Wednesday', 3],
@@ -16,7 +17,7 @@ export default function LeagueSetupPage({ alley, initialLeagueId, onBack, onSave
   const [repeatDays, setRepeatDays] = useState([])
   const [repeatStart, setRepeatStart] = useState('')
   const [repeatEnd, setRepeatEnd] = useState('')
-  const [repeatEvery, setRepeatEvery] = useState(1)
+  const [repeatFrequency, setRepeatFrequency] = useState('weekly')
   const [selectedLeagueId, setSelectedLeagueId] = useState(initialLeagueId || null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [message, setMessage] = useState('')
@@ -31,8 +32,8 @@ export default function LeagueSetupPage({ alley, initialLeagueId, onBack, onSave
   const toggleRepeatDay = day => setRepeatDays(current => current.includes(day) ? current.filter(item => item !== day) : [...current, day])
   const addDate = () => { if (nextDate && !selectedDates.includes(nextDate)) setSelectedDates(current => [...current, nextDate].sort()); setNextDate('') }
   const addRepeatingDates = () => {
-    if (!repeatStart || !repeatEnd || !repeatDays.length) { setMessage('Choose a start date, end date, and at least one repeating day.'); return }
-    const generated = generateRecurringLeagueDates({ startDate: repeatStart, endDate: repeatEnd, weekdays: repeatDays, everyWeeks: repeatEvery })
+    if (!repeatStart || !repeatEnd || (repeatFrequency !== 'daily' && !repeatDays.length)) { setMessage(`Choose a start date, end date${repeatFrequency === 'daily' ? '' : ', and at least one repeating day'}.`); return }
+    const generated = generateRecurringLeagueDates({ startDate: repeatStart, endDate: repeatEnd, weekdays: repeatDays, frequency: repeatFrequency })
     if (!generated.length) { setMessage('No repeating dates matched that schedule. Check the date range and try again.'); return }
     setSelectedDates(current => [...new Set([...current, ...generated])].sort())
     setMessage(`${generated.length} repeating league date${generated.length === 1 ? '' : 's'} added. You can still add or remove individual dates.`)
@@ -41,7 +42,7 @@ export default function LeagueSetupPage({ alley, initialLeagueId, onBack, onSave
     event.preventDefault()
     if (!selectedLanes.length || !selectedDates.length) { setMessage('Select at least one lane and one league date.'); return }
     const form = new FormData(event.currentTarget)
-    await onSaveLeague({ id: crypto.randomUUID(), name: String(form.get('name')), monthlyPrice: Number(form.get('monthlyPrice')), lanes: selectedLanes, dates: selectedDates, recurrence: repeatDays.length ? { weekdays: repeatDays, startDate: repeatStart, endDate: repeatEnd, everyWeeks: repeatEvery } : null, members: [] })
+    await onSaveLeague({ id: crypto.randomUUID(), name: String(form.get('name')), monthlyPrice: Number(form.get('monthlyPrice')), lanes: selectedLanes, dates: selectedDates, recurrence: repeatStart ? { weekdays: repeatDays, startDate: repeatStart, endDate: repeatEnd, frequency: repeatFrequency } : null, members: [] })
     event.currentTarget.reset()
     setSelectedLanes([]); setSelectedDates([]); setRepeatDays([]); setRepeatStart(''); setRepeatEnd('')
     setMessage('League created. You can create another one below.')
@@ -61,7 +62,7 @@ export default function LeagueSetupPage({ alley, initialLeagueId, onBack, onSave
       <div className="league-fields"><label>League name<input name="name" required placeholder="Tuesday Night Strikers" /></label><label>Monthly price<input name="monthlyPrice" type="number" min="0" step="0.01" required placeholder="49.00" /></label></div>
       <fieldset><legend>Select as many lanes as needed</legend><div className="league-lanes">{Array.from({ length: Number(alley?.lanes) || 16 }, (_, index) => `Lane ${String(index + 1).padStart(2, '0')}`).map(lane => <label key={lane}><input type="checkbox" checked={selectedLanes.includes(lane)} onChange={() => toggleLane(lane)} /><span>{lane}</span></label>)}</div></fieldset>
       <fieldset><legend>Select individual league dates</legend><div className="league-date-add"><input type="date" min={localDate(today)} max={localDate(end)} value={nextDate} onChange={event => setNextDate(event.target.value)} /><button type="button" onClick={addDate}>Add date</button></div></fieldset>
-      <fieldset className="league-repeat"><legend>Repeat selected lanes on a schedule <small>optional</small></legend><p>Generate recurring dates while keeping the manual date system above.</p><div className="repeat-days">{weekdays.map(([label, day]) => <label key={day}><input type="checkbox" checked={repeatDays.includes(day)} onChange={() => toggleRepeatDay(day)} /><span>{label.slice(0, 3)}</span></label>)}</div><div className="repeat-controls"><label>Start date<input type="date" min={localDate(today)} max={localDate(end)} value={repeatStart} onChange={event => setRepeatStart(event.target.value)} /></label><label>End date<input type="date" min={repeatStart || localDate(today)} max={localDate(end)} value={repeatEnd} onChange={event => setRepeatEnd(event.target.value)} /></label><label>Repeat<select value={repeatEvery} onChange={event => setRepeatEvery(Number(event.target.value))}><option value="1">Every week</option><option value="2">Every 2 weeks</option><option value="4">Every 4 weeks</option></select></label></div><button className="repeat-add" type="button" onClick={addRepeatingDates}>Add repeating dates</button></fieldset>
+      <fieldset className="league-repeat"><legend>Repeat selected lanes on a schedule <small>optional</small></legend><p>Generate recurring dates while keeping the manual date system above. Per month repeats on the matching numbered weekday, such as the second Tuesday.</p><div className="repeat-days">{weekdays.map(([label, day]) => <label key={day}><input type="checkbox" checked={repeatDays.includes(day)} disabled={repeatFrequency === 'daily'} onChange={() => toggleRepeatDay(day)} /><span>{label.slice(0, 3)}</span></label>)}</div><div className="repeat-controls"><label>Start date<input type="date" min={localDate(today)} max={localDate(end)} value={repeatStart} onChange={event => setRepeatStart(event.target.value)} /></label><label>End date<input type="date" min={repeatStart || localDate(today)} max={localDate(end)} value={repeatEnd} onChange={event => setRepeatEnd(event.target.value)} /></label><label>Repeat<select value={repeatFrequency} onChange={event => setRepeatFrequency(event.target.value)}><option value="daily">Per day</option><option value="weekly">Per week</option><option value="biweekly">Every 2 weeks</option><option value="monthly">Per month</option></select></label></div><button className="repeat-add" type="button" onClick={addRepeatingDates}>Add repeating dates</button></fieldset>
       <div className="selected-dates">{selectedDates.map(date => <button type="button" key={date} onClick={() => setSelectedDates(current => current.filter(item => item !== date))}>{new Date(`${date}T12:00:00`).toLocaleDateString()} ×</button>)}</div>
       <button className="league-save">Save league →</button>{message && <p className="league-message">{message}</p>}
     </form>
