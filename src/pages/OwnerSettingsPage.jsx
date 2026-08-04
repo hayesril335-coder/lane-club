@@ -4,10 +4,11 @@ import { prepareBannerImage } from '../utils/images'
 import './OwnerSettingsPage.css'
 import './OwnerSettingsActions.css'
 import './OwnerBannerSettings.css'
+import './OwnerSettingsBack.css'
 
 const lastFour = value => String(value || '').replace(/\D/g, '').slice(-4)
 
-export default function OwnerSettingsPage({ alley, email, onEditStore, onLanes, onLeagueSetup, onSave, onUpdateCredentials, onCancelService, onLogout }) {
+export default function OwnerSettingsPage({ alley, email, onBack, onEditStore, onLanes, onLeagueSetup, onSave, onSaveEmployeeCode, onUpdateCredentials, onCancelService, onLogout }) {
   const [name, setName] = useState(alley?.name || '')
   const [address, setAddress] = useState(alley?.address || '')
   const [bannerImage, setBannerImage] = useState(alley?.bannerImage || '')
@@ -22,6 +23,7 @@ export default function OwnerSettingsPage({ alley, email, onEditStore, onLanes, 
   const chooseBanner = event => run(async () => { const file = event.target.files?.[0]; if (!file) return; const image = await prepareBannerImage(file); setBannerImage(image); setMessage('Banner picture is ready to save.') })
 
   return <main className="owner-settings"><section>
+    <button className="owner-settings-back" type="button" onClick={onBack}>← Back to overview</button>
     <p>ALLEY SETTINGS</p>
     <h1>Manage your <em>alley.</em></h1>
 
@@ -46,7 +48,7 @@ export default function OwnerSettingsPage({ alley, email, onEditStore, onLanes, 
     <article><h2>Lane names</h2><p>Rename lanes and manage their availability in lane management.</p><button onClick={onLanes}>Manage lane names →</button></article>
     <article><h2>Leagues</h2><p>Create leagues, set pricing, and choose league lanes and dates.</p><button className="league-setup-link" onClick={onLeagueSetup}>Setup a league →</button></article>
 
-    <EmployeeAccessSettings savedCode={alley?.employeeCode} onSave={onSave} />
+    <EmployeeAccessSettings savedCode={alley?.employeeCode} onSave={onSaveEmployeeCode} />
 
     <form onSubmit={saveCredentials}>
       <h2>Change email and password</h2>

@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, getDocsFromServer, serverTimestamp, setDoc } from 'firebase/firestore'
 import { firestore } from '../lib/firebaseClient'
 
 export async function loadAccount(uid) {
@@ -27,6 +27,8 @@ export async function loadAlleys() {
 export async function findAlleyByEmployeeCode(code) {
   const normalizedCode = String(code || '').replace(/\D/g, '')
   if (normalizedCode.length !== 10) return null
-  const alleys = await loadAlleys()
+  let snapshot
+  try { snapshot = await getDocsFromServer(collection(firestore, 'alleys')) } catch { snapshot = await getDocs(collection(firestore, 'alleys')) }
+  const alleys = snapshot.docs.map(item => ({ id: item.id, ...item.data() }))
   return alleys.find(alley => String(alley.employeeCode || '') === normalizedCode) || null
 }

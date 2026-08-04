@@ -1,0 +1,11 @@
+.owner-settings .owner-settings-back {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0 24px;
+  border: 1px solid #cbd3cb;
+  border-radius: 4px;
+  background: #fffdf7;
+  color: #17313e;
+  padding: 10px 13px;
+  font-weight: 700;
+}

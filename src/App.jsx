@@ -111,6 +111,7 @@ export default function App() {
   const [ownerReservations, setOwnerReservations] = useState([])
   const [selectedAlley, setSelectedAlley] = useState(defaultAlleys[0])
   const [employeeAlley, setEmployeeAlley] = useState(null)
+  const [selectedLeagueId, setSelectedLeagueId] = useState(null)
   const activeMember = memberForAlley(member, selectedAlley)
   const membershipAlleys = availableAlleys.filter(alley => hasMembershipAt(member, alley))
 
@@ -175,6 +176,24 @@ export default function App() {
 
   useEffect(() => { if (user && authReady) saveAccount(user.uid, member).catch(console.error) }, [member, user, authReady])
   useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 1000); return () => window.clearInterval(timer) }, [])
+  useEffect(() => {
+    if (!employeeAlley) return undefined
+    const validateEmployeeCode = async () => {
+      const code = localStorage.getItem('lane-club-employee-code')
+      if (!code) return
+      try {
+        const validAlley = await findAlleyByEmployeeCode(code)
+        if (!validAlley) {
+          localStorage.removeItem('lane-club-employee-code')
+          setEmployeeAlley(null)
+          setOwnerReservations([])
+          setPage('home')
+        }
+      } catch (error) { console.warn('Employee code could not be revalidated.', error) }
+    }
+    const timer = window.setInterval(validateEmployeeCode, 30000)
+    return () => window.clearInterval(timer)
+  }, [employeeAlley, setPage])
   useEffect(() => {
     const weekStart = date => { const copy = new Date(date); copy.setHours(0, 0, 0, 0); copy.setDate(copy.getDate() - ((copy.getDay() + 6) % 7)); return copy.getTime() }
     setMember(current => {
@@ -278,6 +297,25 @@ export default function App() {
     const leagues = (ownerAlley?.leagues || []).map(league => league.id === leagueId ? { ...league, members: [...(league.members || []), leagueMember] } : league)
     await saveOwnerAlleyUpdates({ leagues })
   }
+  const deleteLeague = async leagueId => {
+    await saveOwnerAlleyUpdates({ leagues: (ownerAlley?.leagues || []).filter(league => league.id !== leagueId) })
+    setSelectedLeagueId(null)
+  }
+  const endLeagueMembership = async (leagueId, memberId) => {
+    const leagues = (ownerAlley?.leagues || []).map(league => league.id === leagueId ? {
+      ...league,
+      members: (league.members || []).map(leagueMember => leagueMember.id === memberId ? { ...leagueMember, status: 'cancelled', active: false, endedAt: new Date().toISOString() } : leagueMember),
+    } : league)
+    await saveOwnerAlleyUpdates({ leagues })
+  }
+  const saveEmployeeAccess = async updates => {
+    if (!user) throw new Error('Log in to the owner account before changing the employee code.')
+    await saveAlley(user.uid, updates)
+    const savedAlley = await loadAlley(user.uid)
+    if (String(savedAlley?.employeeCode || '') !== String(updates.employeeCode || '')) throw new Error('Firebase did not confirm the new employee code. Please try again.')
+    setOwnerAlley(current => ({ ...current, ...updates }))
+    setAvailableAlleys(current => current.map(alley => alley.ownerId === user.uid || alley.id === user.uid ? { ...alley, ...updates } : alley))
+  }
   const updateOwnerCredentials = async details => {
     const authUser = await updateLoginCredentials(details)
     const email = authUser.email || details.newEmail || member.email
@@ -305,16 +343,16 @@ export default function App() {
   if (page === 'owner-checkout') return <OwnerCheckoutPage onBack={() => setPage('owner-auth')} onContinue={async () => { if (ownerAlley?.name) { await saveOwnerAlleyUpdates({ serviceStatus: 'active', cancelledAt: null }); setPage('owner-dashboard') } else setPage('alley-setup') }} />
   if (page === 'alley-setup') return <AlleySetupPage initialAlley={ownerAlley} onBack={() => setPage('owner-checkout')} onComplete={async alley => { setOwnerAlley(alley); if (user) await saveAlley(user.uid, alley); setPage('owner-dashboard') }} />
 
-  if (page === 'owner-dashboard') return ownerPage(<OwnerDashboardPage alley={ownerAlley} reservations={ownerReservations} now={now} />, 'overview')
+  if (page === 'owner-dashboard') return ownerPage(<OwnerDashboardPage alley={ownerAlley} reservations={ownerReservations} now={now} onLeague={leagueId => { setSelectedLeagueId(leagueId); setPage('league-setup') }} />, 'overview')
   if (page === 'lane-management') return ownerPage(<LaneManagementPage onBack={() => setPage('owner-dashboard')} />, 'settings')
   if (page === 'reservation-management') return ownerPage(<ReservationManagementPage bookings={ownerReservations} alley={ownerAlley} now={now} />, 'reservations')
   if (page === 'owner-walk-in-reservation') return ownerPage(<OwnerWalkInReservationPage alley={ownerAlley} onBack={() => setPage('reservation-management')} onLeagueSignup={() => setPage('league-signup')} onComplete={async reservation => { await addOwnerReservation(reservation); setPage('reservation-management') }} />, 'new')
   if (page === 'league-signup') return ownerPage(<LeagueSignupPage alley={ownerAlley} onBack={() => setPage('owner-walk-in-reservation')} onPurchase={addLeagueMember} />, 'new')
-  if (page === 'league-setup') return ownerPage(<LeagueSetupPage alley={ownerAlley} onBack={() => setPage('owner-settings')} onSaveLeague={addLeague} />, 'settings')
+  if (page === 'league-setup') return ownerPage(<LeagueSetupPage alley={ownerAlley} initialLeagueId={selectedLeagueId} onBack={() => { setSelectedLeagueId(null); setPage('owner-settings') }} onSaveLeague={addLeague} onDeleteLeague={deleteLeague} onEndMembership={endLeagueMembership} />, 'settings')
   if (page === 'owner-store') return ownerPage(<OwnerStorefrontPage alley={ownerAlley} onDashboard={() => setPage('owner-dashboard')} onPlaceOrder={addOwnerOrder} />, 'store')
   if (page === 'owner-store-edit') return ownerPage(<OwnerStorePage alley={ownerAlley} onAddProduct={addOwnerProduct} onDeleteProduct={deleteOwnerProduct} onAddCategory={addOwnerCategory} />, 'store')
   if (page === 'owner-orders') return ownerPage(<OrdersPage alley={ownerAlley} />, 'orders')
-  if (page === 'owner-settings') return ownerPage(<OwnerSettingsPage alley={ownerAlley} email={member.email || user?.email || ''} onEditStore={() => setPage('owner-store-edit')} onLanes={() => setPage('lane-management')} onLeagueSetup={() => setPage('league-setup')} onSave={saveOwnerAlleyUpdates} onUpdateCredentials={updateOwnerCredentials} onCancelService={cancelOwnerService} onLogout={logout} />, '')
+  if (page === 'owner-settings') return ownerPage(<OwnerSettingsPage alley={ownerAlley} email={member.email || user?.email || ''} onBack={() => setPage('owner-dashboard')} onEditStore={() => setPage('owner-store-edit')} onLanes={() => setPage('lane-management')} onLeagueSetup={() => { setSelectedLeagueId(null); setPage('league-setup') }} onSave={saveOwnerAlleyUpdates} onSaveEmployeeCode={saveEmployeeAccess} onUpdateCredentials={updateOwnerCredentials} onCancelService={cancelOwnerService} onLogout={logout} />, '')
 
   if (employeeAlley && page === 'employee-reservations') return employeePage(<ReservationManagementPage bookings={ownerReservations} alley={employeeAlley} now={now} />, 'reservations')
   if (employeeAlley && page === 'employee-add') return employeePage(<OwnerWalkInReservationPage alley={employeeAlley} onLeagueSignup={() => setPage('employee-league-signup')} onComplete={async reservation => { await addEmployeeReservation(reservation); setPage('employee-reservations') }} />, 'new')
