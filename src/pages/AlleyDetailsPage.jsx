@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { businessDays, currentBusinessDay, formatDayHours, normalizeBusinessHours } from '../utils/businessHours'
 import './AlleyDetailsPage.css'
 import './AlleyBanner.css'
@@ -6,7 +5,6 @@ import './AlleyDetailsLeagues.css'
 import './AlleyHours.css'
 
 export default function AlleyDetailsPage({ alley, onBack, onJoin, onJoinLeague }) {
-  const [saved, setSaved] = useState(false)
   const mapsQuery = alley.address || `${alley.name}, ${alley.area}, Los Angeles, CA`
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`
   const titleParts = alley.name.replace(/ (Lanes|Bowl|Room|Social)$/, '')
@@ -19,7 +17,6 @@ export default function AlleyDetailsPage({ alley, onBack, onJoin, onJoinLeague }
     <div className="details-shell">
       <button className="details-back" onClick={onBack}>← Back to my dashboard</button>
       <section className={`details-photo ${alley.color} ${alley.bannerImage ? 'has-banner' : ''}`}>
-        <button onClick={() => setSaved(!saved)}>{saved ? '♥ Saved' : '♡ Save alley'}</button>
         {alley.bannerImage ? <img className="details-banner-image" src={alley.bannerImage} alt={`${alley.name} bowling alley`} /> : <><div className="photo-pins">● ● ●</div><div className="photo-lanes"><i /><i /><i /><i /><i /></div></>}
         <strong>{alley.name.toUpperCase()}</strong>
       </section>
