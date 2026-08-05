@@ -31,6 +31,7 @@ import EmployeeWorkspace from './components/EmployeeWorkspace'
 import OwnerSettingsShortcut from './components/OwnerSettingsShortcut'
 import { hasActiveMembership } from './utils/demoMode'
 import { hasMembershipAt, memberForAlley, membershipAlleyIds } from './utils/memberships'
+import { reservationStartsAt } from './utils/reservations'
 import { completeGoogleRedirect, observeAuthState, signInWithGoogleCredential, signOut, updateLoginCredentials } from './services/authService'
 import { findAlleyByEmployeeCode, loadAccount, loadAlley, loadAlleys, saveAccount, saveAlley } from './services/accountService'
 import { endAllSavedLeagueMemberships, endSavedLeagueMembership, generateLeaguePasswords, invalidateLeaguePasswords, joinLeagueWithPassword, loadLeagueMembers, validateLeaguePassword } from './services/leagueService'
@@ -120,7 +121,7 @@ export default function App() {
   const [selectedLeagueId, setSelectedLeagueId] = useState(null)
   const [leagueEntryPoint, setLeagueEntryPoint] = useState('settings')
   const [selectedLeague, setSelectedLeague] = useState(null)
-  const activeMember = memberForAlley(member, selectedAlley)
+  const activeMember = memberForAlley(member, selectedAlley, now)
   const membershipAlleys = availableAlleys.filter(alley => hasMembershipAt(member, alley))
 
   useEffect(() => {
@@ -145,7 +146,15 @@ export default function App() {
           if (account?.role !== 'owner') {
             const memberships = membershipAlleyIds(account)
             if (account?.hasMembership && !memberships.length) memberships.push(account.selectedAlleyId || defaultAlleys[0].id)
-            account = { ...account, membershipAlleyIds: memberships }
+            const recoveredReservations = publicAlleys.flatMap(alley => (alley.reservations || []).filter(reservation => reservation.source === 'member' && (reservation.memberUid === authUser.uid || String(reservation.email || '').toLowerCase() === String(authUser.email || '').toLowerCase())).map(reservation => ({ ...reservation, alleyId: reservation.alleyId || alley.id || alley.ownerId, alleyName: reservation.alleyName || alley.name, lane: String(reservation.lane || '').replace(/^Lane\s*/i, '') })))
+            const membershipStartedAtByAlley = { ...(account?.membershipStartedAtByAlley || {}) }
+            memberships.forEach(alleyId => {
+              const alleyKey = String(alleyId)
+              if (membershipStartedAtByAlley[alleyKey]) return
+              const earliestReservation = (account?.reservations || []).filter(reservation => String(reservation.alleyId ?? account?.membershipAlleyId ?? '') === alleyKey).map(reservation => reservation.createdAt).filter(Boolean).sort()[0]
+              membershipStartedAtByAlley[alleyKey] = earliestReservation || account?.membershipStartedAt || new Date().toISOString()
+            })
+            account = { ...account, membershipAlleyIds: memberships, membershipStartedAtByAlley, reservations: uniqueReservations([...(account?.reservations || []), ...recoveredReservations]) }
           }
           setMember(current => ({ ...current, ...account, name: account?.name || authUser.displayName || 'Lane Club Member', email: authUser.email }))
           setOwnerAlley(alley)
@@ -202,15 +211,6 @@ export default function App() {
     const timer = window.setInterval(validateEmployeeCode, 30000)
     return () => window.clearInterval(timer)
   }, [employeeAlley, setPage])
-  useEffect(() => {
-    const weekStart = date => { const copy = new Date(date); copy.setHours(0, 0, 0, 0); copy.setDate(copy.getDate() - ((copy.getDay() + 6) % 7)); return copy.getTime() }
-    setMember(current => {
-      const reservations = current.reservations.filter(reservation => weekStart(reservation.createdAt) === weekStart(now))
-      const usedHours = reservations.reduce((total, reservation) => total + reservation.duration, 0)
-      return reservations.length === current.reservations.length && usedHours === current.usedHours ? current : { ...current, reservations, usedHours }
-    })
-  }, [now])
-
   const continueAsMember = async ({ user: authUser, fullName, email } = {}) => {
     setUser(authUser)
     const next = { ...member, name: fullName || authUser?.displayName || member.name, email: email || authUser?.email || member.email, role: 'member' }
@@ -219,7 +219,8 @@ export default function App() {
     setPage('find-alley')
   }
   const activateMembership = async () => {
-    setMember(current => ({ ...current, hasMembership: true, membershipAlleyId: current.membershipAlleyId ?? selectedAlley.id, membershipAlleyIds: [...new Set([...membershipAlleyIds(current).map(String), String(selectedAlley.id)])], selectedAlleyId: selectedAlley.id }))
+    const startedAt = new Date().toISOString()
+    setMember(current => ({ ...current, hasMembership: true, membershipAlleyId: current.membershipAlleyId ?? selectedAlley.id, membershipAlleyIds: [...new Set([...membershipAlleyIds(current).map(String), String(selectedAlley.id)])], membershipStartedAtByAlley: { ...(current.membershipStartedAtByAlley || {}), [String(selectedAlley.id)]: current.membershipStartedAtByAlley?.[String(selectedAlley.id)] || startedAt }, selectedAlleyId: selectedAlley.id }))
     setPage('member-dashboard')
     if (selectedAlley.ownerId && user) {
       try {
@@ -231,13 +232,16 @@ export default function App() {
   }
   const addReservation = async reservation => {
     if (!hasMembershipAt(member, selectedAlley)) throw new Error(`An active ${selectedAlley.name} membership is required to reserve a lane.`)
-    const savedReservation = { ...reservation, id: crypto.randomUUID(), alleyId: selectedAlley.id, alleyName: selectedAlley.name, createdAt: new Date().toISOString() }
-    setMember(current => ({ ...current, reservations: [...current.reservations, savedReservation], usedHours: current.usedHours + reservation.duration }))
+    const startsAt = reservationStartsAt(reservation)
+    const savedReservation = { ...reservation, id: crypto.randomUUID(), alleyId: selectedAlley.id, alleyName: selectedAlley.name, ...(Number.isNaN(startsAt.getTime()) ? {} : { startsAt: startsAt.toISOString() }), createdAt: new Date().toISOString() }
+    const nextMember = { ...member, reservations: [...(member.reservations || []), savedReservation] }
+    setMember(nextMember)
+    if (user) await saveAccount(user.uid, nextMember)
     setPage('reservation-confirmation')
     if (selectedAlley.ownerId) {
       try {
         const alley = await loadAlley(selectedAlley.ownerId)
-        const ownerReservation = { ...savedReservation, lane: `Lane ${String(reservation.lane).padStart(2, '0')}`, name: member.name, email: member.email, initials: member.name.split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase(), hours: `${reservation.duration} hours`, durationHours: reservation.duration, status: 'Confirmed', source: 'member', amount: 0 }
+        const ownerReservation = { ...savedReservation, memberUid: user?.uid || '', lane: `Lane ${String(reservation.lane).padStart(2, '0')}`, name: member.name, email: member.email, initials: member.name.split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase(), hours: `${reservation.duration} hours`, durationHours: reservation.duration, status: 'Confirmed', source: 'member', amount: 0 }
         await saveAlley(selectedAlley.ownerId, { ...alley, reservations: [...(alley?.reservations || []), ownerReservation] })
       } catch (error) { console.error(error) }
     }

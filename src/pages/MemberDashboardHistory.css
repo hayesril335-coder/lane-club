@@ -1,0 +1,14 @@
+.member-reservation-history{margin-top:20px;background:#fffdf7;border:1px solid #dce0d9;border-radius:4px;padding:24px 30px}
+.member-reservation-history>header{display:flex;align-items:end;justify-content:space-between;gap:18px;border-bottom:1px solid #e0e3dc;padding-bottom:18px}
+.member-reservation-history>header p{margin:0 0 8px;color:#c15148;font:10px 'DM Mono',monospace;letter-spacing:.12em}
+.member-reservation-history>header h2{margin:0;font:700 26px 'Playfair Display',serif}
+.member-reservation-history>header h2 em{color:#d55c50}
+.member-reservation-history>header>span{color:#748287;font-size:11px;white-space:nowrap}
+.member-reservation-history article{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:18px;padding:17px 0;border-bottom:1px solid #e4e6e0}
+.member-reservation-history article:last-child{border-bottom:0}
+.member-reservation-history article>div{display:grid;gap:5px}
+.member-reservation-history article span{color:#287668;font:9px 'DM Mono',monospace;letter-spacing:.1em}
+.member-reservation-history article strong{font:700 17px 'Playfair Display',serif}
+.member-reservation-history article p{margin:0;color:#6c7c82;font-size:11px;text-align:right}
+.member-history-empty{margin:22px 0 0;color:#718087;font-size:12px}
+@media(max-width:650px){.member-reservation-history{padding:21px 20px}.member-reservation-history>header{align-items:start}.member-reservation-history>header h2{font-size:23px}.member-reservation-history article{grid-template-columns:1fr;gap:7px}.member-reservation-history article p{text-align:left}}

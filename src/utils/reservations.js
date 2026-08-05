@@ -26,6 +26,23 @@ export function reservationEndsAt(reservation) {
   return new Date(start.getTime() + reservationDuration(reservation) * 3600000)
 }
 
+export function reservationStartsAt(reservation) {
+  if (reservation.startsAt) return new Date(reservation.startsAt)
+  const end = reservationEndsAt(reservation)
+  return end ? new Date(end.getTime() - reservationDuration(reservation) * 3600000) : new Date(reservation.createdAt || 0)
+}
+
+export function newestReservationsFirst(reservations = []) {
+  return [...reservations].sort((a, b) => reservationStartsAt(b).getTime() - reservationStartsAt(a).getTime())
+}
+
+export function upcomingReservationsFirst(reservations = [], now = new Date()) {
+  return [...reservations].filter(reservation => {
+    const end = reservationEndsAt(reservation)
+    return !end || end >= now
+  }).sort((a, b) => reservationStartsAt(a).getTime() - reservationStartsAt(b).getTime())
+}
+
 export function isReservationActive(reservation, now = new Date()) {
   const end = reservationEndsAt(reservation)
   return !end || end.getTime() >= now.getTime()
