@@ -8,12 +8,29 @@
 
 .member-store-member-header .account-menu {
   margin-left: auto;
+  z-index: 50;
+}
+
+.member-store-page > .member-store-member-header .account-trigger {
+  color: #425964;
+}
+
+.member-store-page > .member-store-member-header .account-dropdown button {
+  background: #f2f4ee;
+  color: #314b56;
+}
+
+.member-store-page > .member-store-member-header .account-dropdown .account-logout {
+  background: #fff2ef;
+  color: #ad4943;
 }
 
 .store-change-alley-row {
   display: flex;
   justify-content: flex-end;
-  margin: -18px 0 18px;
+  margin: 20px 0 18px;
+  position: relative;
+  z-index: 10;
 }
 
 .store-change-alley-row button {
@@ -32,6 +49,6 @@
   }
 
   .store-change-alley-row {
-    margin: -22px 0 16px;
+    margin: 18px 0 16px;
   }
 }

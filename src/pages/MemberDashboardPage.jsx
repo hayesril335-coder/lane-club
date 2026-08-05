@@ -16,7 +16,7 @@ const historyDate = reservation => {
   return reservation.date || 'Date unavailable'
 }
 
-export default function MemberDashboardPage({ alley, membershipAlleys, now, onBack, onSelectAlley, onReserve, onReservations, onAccount, member }) {
+export default function MemberDashboardPage({ alley, membershipAlleys, now, onBack, onSelectAlley, onReserve, onReservations, onAccount, onLogout, member }) {
   const remaining = Math.max(0, 4 - member.usedHours)
   const reservations = member.reservations || []
   const next = upcomingReservationsFirst(reservations, now)[0]
@@ -25,7 +25,7 @@ export default function MemberDashboardPage({ alley, membershipAlleys, now, onBa
     <header className="member-dash-header">
       <a className="brand finder-brand" href="#dashboard" onClick={event => event.preventDefault()}><span className="brand-mark"><i /><i /><i /></span>LANE CLUB</a>
       <nav><button onClick={onReservations}>My reservations</button><button onClick={onBack}>Find an alley</button><button onClick={onAccount}>Account</button></nav>
-      <AccountMenu member={member} onOpenSettings={onAccount} />
+      <AccountMenu member={member} onOpenSettings={onAccount} onLogout={onLogout} />
     </header>
     <section className="member-dash-shell">
       <header className="member-welcome"><div><p>YOUR MEMBER DASHBOARD</p><h1>Ready to <em>roll,</em> {member.name.split(' ')[0]}?</h1><span>{member.hasMembership ? `Your ${alley.name} membership is active.` : 'Choose an alley to start your membership.'}</span></div><MembershipAlleyMenu alleys={membershipAlleys} currentAlley={alley} onSelect={onSelectAlley} /></header>
