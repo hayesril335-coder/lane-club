@@ -3,6 +3,7 @@ import './AlleyDetailsPage.css'
 import './AlleyBanner.css'
 import './AlleyDetailsLeagues.css'
 import './AlleyHours.css'
+import './AlleyDetailsBack.css'
 
 export default function AlleyDetailsPage({ alley, onBack, onJoin, onJoinLeague }) {
   const mapsQuery = alley.address || `${alley.name}, ${alley.area}, Los Angeles, CA`
@@ -15,7 +16,7 @@ export default function AlleyDetailsPage({ alley, onBack, onJoin, onJoinLeague }
   return <main className="details-page">
     <header className="details-header"><a className="brand finder-brand" href="#dashboard" onClick={event => { event.preventDefault(); onBack() }}><span className="brand-mark"><i /><i /><i /></span>LANE CLUB</a><nav><button className="nav-active" onClick={onBack}>Find an alley</button><button>My reservations</button><button>Account</button></nav></header>
     <div className="details-shell">
-      <button className="details-back" onClick={onBack}>← Back to my dashboard</button>
+      <button className="details-back" onClick={onBack}><span>←</span> Back to search</button>
       <section className={`details-photo ${alley.color} ${alley.bannerImage ? 'has-banner' : ''}`}>
         {alley.bannerImage ? <img className="details-banner-image" src={alley.bannerImage} alt={`${alley.name} bowling alley`} /> : <><div className="photo-pins">● ● ●</div><div className="photo-lanes"><i /><i /><i /><i /><i /></div></>}
         <strong>{alley.name.toUpperCase()}</strong>

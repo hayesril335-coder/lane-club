@@ -1,0 +1,4 @@
+.details-back{display:inline-flex;align-items:center;gap:9px;margin:0 0 22px;padding:11px 15px!important;border:1px solid #d45b50!important;border-radius:4px;background:#fffdf7!important;color:#b84d46!important;font-size:12px!important;font-weight:700;box-shadow:0 4px 12px #17313e12;transition:background .15s ease,color .15s ease,transform .15s ease}
+.details-back span{font-size:18px;line-height:1}
+.details-back:hover{background:#d45b50!important;color:#fffdf7!important;transform:translateX(-2px)}
+@media(max-width:800px){.details-back{padding:12px 16px!important;font-size:13px!important}}
