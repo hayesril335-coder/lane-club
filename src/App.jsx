@@ -49,7 +49,7 @@ function publicAlley(alley, index) {
     lanes: Number(alley.lanes || alley.laneCount || 12),
     rating: Number(alley.rating || 4.8),
     reviews: Number(alley.reviews || 0),
-    tags: Array.isArray(alley.tags) ? alley.tags : ['Lane Club partner'],
+    tags: Array.isArray(alley.tags) ? alley.tags.slice(0, 4) : [],
     color: alley.color || 'highland',
     ...alley,
   }

@@ -2,11 +2,13 @@ import { useState } from 'react'
 import EmployeeAccessSettings from '../components/EmployeeAccessSettings'
 import { prepareBannerImage } from '../utils/images'
 import { businessDays, normalizeBusinessHours } from '../utils/businessHours'
+import { locationErrorMessage } from '../utils/location'
 import './OwnerSettingsPage.css'
 import './OwnerSettingsActions.css'
 import './OwnerBannerSettings.css'
 import './OwnerSettingsBack.css'
 import './OwnerBusinessHours.css'
+import './OwnerDiscoverySettings.css'
 
 const lastFour = value => String(value || '').replace(/\D/g, '').slice(-4)
 
@@ -15,6 +17,8 @@ export default function OwnerSettingsPage({ alley, email, onBack, onEditStore, o
   const [address, setAddress] = useState(alley?.address || '')
   const [bannerImage, setBannerImage] = useState(alley?.bannerImage || '')
   const [businessHours, setBusinessHours] = useState(() => normalizeBusinessHours(alley))
+  const [tags, setTags] = useState(() => (alley?.tags || []).slice(0, 4))
+  const [tagDraft, setTagDraft] = useState('')
   const [message, setMessage] = useState('')
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -25,6 +29,21 @@ export default function OwnerSettingsPage({ alley, email, onBack, onEditStore, o
   const saveBilling = event => { event.preventDefault(); const form = new FormData(event.currentTarget); const cardNumber = String(form.get('cardNumber')); return run(() => save({ ownerBillingMethod: { cardholder: String(form.get('cardholder')), brand: cardNumber.startsWith('4') ? 'Visa' : 'Card', last4: lastFour(cardNumber), expiration: String(form.get('expiration')) } }, 'Lane Club subscription payment method saved.')) }
   const chooseBanner = event => run(async () => { const file = event.target.files?.[0]; if (!file) return; const image = await prepareBannerImage(file); setBannerImage(image); setMessage('Banner picture is ready to save.') })
   const updateHours = (day, updates) => setBusinessHours(current => ({ ...current, [day]: { ...current[day], ...updates } }))
+  const addTag = () => {
+    const tag = tagDraft.trim().slice(0, 24)
+    if (!tag || tags.length >= 4 || tags.some(item => item.toLowerCase() === tag.toLowerCase())) return
+    setTags(current => [...current, tag])
+    setTagDraft('')
+  }
+  const saveCurrentLocation = () => run(() => new Promise((resolve, reject) => {
+    if (!navigator.geolocation) { reject(new Error(locationErrorMessage())); return }
+    navigator.geolocation.getCurrentPosition(async position => {
+      try {
+        await save({ latitude: position.coords.latitude, longitude: position.coords.longitude, locationAccuracy: position.coords.accuracy, locationUpdatedAt: new Date(position.timestamp).toISOString() }, 'Alley location saved for Near me sorting.')
+        resolve()
+      } catch (error) { reject(error) }
+    }, error => reject(new Error(locationErrorMessage(error))), { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 })
+  }))
 
   return <main className="owner-settings"><section>
     <button className="owner-settings-back" type="button" onClick={onBack}>← Back to overview</button>
@@ -41,6 +60,20 @@ export default function OwnerSettingsPage({ alley, email, onBack, onEditStore, o
       <h2>Change address</h2><p>This address is used when customers tap Get directions.</p>
       <label>Full bowling alley address<input value={address} onChange={event => setAddress(event.target.value)} required placeholder="123 Main Street, Los Angeles, CA 90001" /></label>
       <button disabled={busy}>Save address</button>
+    </form>
+
+    <article className="owner-location-settings">
+      <h2>Near me location</h2><p>While you are at the bowling alley, save this device's precise location so customers can sort alleys using their live distance.</p>
+      {Number.isFinite(Number(alley?.latitude)) && Number.isFinite(Number(alley?.longitude)) && <small>Saved location: {Number(alley.latitude).toFixed(5)}, {Number(alley.longitude).toFixed(5)}</small>}
+      <button type="button" onClick={saveCurrentLocation} disabled={busy}>{busy ? 'Saving location…' : 'Use this device’s location'}</button>
+    </article>
+
+    <form className="owner-tags-form" onSubmit={event => { event.preventDefault(); run(() => save({ tags }, 'Alley tags saved.')) }}>
+      <h2>Alley tags</h2><p>Add up to four short tags. They appear beside the lane count on customer search cards.</p>
+      <div className="owner-tag-list">{tags.map(tag => <span key={tag}>{tag}<button type="button" aria-label={`Remove ${tag}`} onClick={() => setTags(current => current.filter(item => item !== tag))}>×</button></span>)}</div>
+      <div className="owner-tag-add"><label>New tag<input value={tagDraft} onChange={event => setTagDraft(event.target.value)} maxLength="24" disabled={tags.length >= 4} placeholder={tags.length >= 4 ? 'Four-tag maximum reached' : 'Example: Arcade'} /></label><button type="button" onClick={addTag} disabled={!tagDraft.trim() || tags.length >= 4}>Add tag</button></div>
+      <small>{tags.length} of 4 tags added</small>
+      <button disabled={busy}>Save tags</button>
     </form>
 
     <form className="business-hours-form" onSubmit={event => { event.preventDefault(); run(() => save({ businessHours }, 'Business hours saved.')) }}>
