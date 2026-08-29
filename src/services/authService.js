@@ -1,4 +1,4 @@
-import { browserLocalPersistence, createUserWithEmailAndPassword, EmailAuthProvider, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, reauthenticateWithCredential, setPersistence, signInWithCredential, signInWithEmailAndPassword, signOut as firebaseSignOut, updateEmail, updatePassword, updateProfile } from 'firebase/auth'
+import { browserLocalPersistence, createUserWithEmailAndPassword, EmailAuthProvider, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, reauthenticateWithCredential, sendPasswordResetEmail, setPersistence, signInWithCredential, signInWithEmailAndPassword, signOut as firebaseSignOut, updateEmail, updatePassword, updateProfile } from 'firebase/auth'
 import { firebaseAuth } from '../lib/firebaseClient'
 
 export async function signUp({ email, password, fullName, role = 'member' }) {
@@ -16,6 +16,12 @@ export async function signIn({ email, password }) {
 
 export async function signOut() {
   return firebaseSignOut(firebaseAuth)
+}
+
+export async function requestPasswordReset(email) {
+  const normalizedEmail = String(email || '').trim().toLowerCase()
+  if (!normalizedEmail) throw new Error('Enter the email address for your Lane Club account.')
+  await sendPasswordResetEmail(firebaseAuth, normalizedEmail)
 }
 
 export async function updateLoginCredentials({ currentPassword, newEmail, newPassword }) {

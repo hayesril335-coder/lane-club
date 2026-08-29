@@ -1,12 +1,14 @@
 import { useCallback, useState } from 'react'
 import GoogleAuthButton from '../components/GoogleAuthButton'
-import { signIn, signInWithGoogleCredential, signUp } from '../services/authService'
+import PasswordResetForm from '../components/PasswordResetForm'
+import { requestPasswordReset, signIn, signInWithGoogleCredential, signUp } from '../services/authService'
 import './MemberAuthPage.css'
 
 export default function MemberAuthPage({ onBack, onOwner, onContinue, initialMode = 'signup' }) {
   const [mode, setMode] = useState(initialMode)
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  const [resettingPassword, setResettingPassword] = useState(false)
 
   const finish = async action => {
     setBusy(true)
@@ -30,6 +32,18 @@ export default function MemberAuthPage({ onBack, onOwner, onContinue, initialMod
 
   const googleCredential = useCallback(idToken => finish(() => signInWithGoogleCredential(idToken, 'member')), [])
   const googleError = useCallback(error => setMessage(error.message), [])
+  const sendReset = async email => {
+    setBusy(true)
+    setMessage('')
+    try {
+      await requestPasswordReset(email)
+      setMessage('If this email has a Lane Club password account, a reset link has been sent. Check your inbox and spam folder.')
+    } catch (error) {
+      setMessage(error.message.replace('Firebase: ', ''))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return <main className="auth-page">
     <section className="auth-intro">
@@ -38,19 +52,22 @@ export default function MemberAuthPage({ onBack, onOwner, onContinue, initialMod
       <div className="auth-intro-copy"><p className="eyebrow">MEMBERSHIP MADE SIMPLE</p><h1>Your next game is<br /><em>waiting.</em></h1><p>Log in to save your reservations and settings.</p></div>
     </section>
     <section className="auth-panel"><div className="auth-form-wrap">
-      <div className="auth-tabs"><button className={mode === 'signup' ? 'active' : ''} onClick={() => setMode('signup')}>Create account</button><button className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')}>Log in</button></div>
-      <div className="form-heading"><p className="eyebrow">{mode === 'signup' ? 'START BOWLING' : 'WELCOME BACK'}</p><h2>{mode === 'signup' ? 'Create your account.' : 'Log in to Lane Club.'}</h2></div>
-      <GoogleAuthButton disabled={busy} onCredential={googleCredential} onError={googleError} role="member" />
-      <div className="auth-divider">or use email</div>
-      <form onSubmit={submit} className="auth-form">
-        {mode === 'signup' && <label>Full name<input name="fullName" required /></label>}
-        <label>Email address<input name="email" type="email" required /></label>
-        <label>Password<input name="password" type="password" minLength="8" required /></label>
-        <button disabled={busy} className="form-submit">{busy ? 'Please wait…' : mode === 'signup' ? 'Create account →' : 'Log in →'}</button>
-      </form>
-      {message && <p className="form-message">{message}</p>}
-      <p className="terms">Testing mode is active: no membership payment is required.</p>
-      <p className="owner-link">Own a bowling alley? <button onClick={onOwner}>Set up your alley →</button></p>
+      {resettingPassword ? <PasswordResetForm busy={busy} message={message} onSubmit={sendReset} onBack={() => { setResettingPassword(false); setMessage('') }} /> : <>
+        <div className="auth-tabs"><button className={mode === 'signup' ? 'active' : ''} onClick={() => { setMode('signup'); setMessage('') }}>Create account</button><button className={mode === 'login' ? 'active' : ''} onClick={() => { setMode('login'); setMessage('') }}>Log in</button></div>
+        <div className="form-heading"><p className="eyebrow">{mode === 'signup' ? 'START BOWLING' : 'WELCOME BACK'}</p><h2>{mode === 'signup' ? 'Create your account.' : 'Log in to Lane Club.'}</h2></div>
+        <GoogleAuthButton disabled={busy} onCredential={googleCredential} onError={googleError} role="member" />
+        <div className="auth-divider">or use email</div>
+        <form onSubmit={submit} className="auth-form">
+          {mode === 'signup' && <label>Full name<input name="fullName" required /></label>}
+          <label>Email address<input name="email" type="email" required /></label>
+          <label>Password<input name="password" type="password" minLength="8" required /></label>
+          {mode === 'login' && <button type="button" className="forgot" onClick={() => { setResettingPassword(true); setMessage('') }}>Forgot password?</button>}
+          <button disabled={busy} className="form-submit">{busy ? 'Please wait…' : mode === 'signup' ? 'Create account →' : 'Log in →'}</button>
+        </form>
+        {message && <p className="form-message">{message}</p>}
+        <p className="terms">Testing mode is active: no membership payment is required.</p>
+        <p className="owner-link">Own a bowling alley? <button onClick={onOwner}>Set up your alley →</button></p>
+      </>}
     </div></section>
   </main>
 }
